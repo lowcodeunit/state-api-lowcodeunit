@@ -13,9 +13,9 @@ using System.Linq;
 using System;
 using LCU.StateAPI;
 
-[assembly: FunctionsStartup(typeof(LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Startup))]
+[assembly: FunctionsStartup(typeof(LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host.Startup))]
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis
+namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host
 {
     public class Startup : StateAPIStartup
     {

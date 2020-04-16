@@ -10,7 +10,7 @@
     },
     "extensions": {
         "durableTask": {
-            "hubName": "limitedtrial",
+            "hubName": "replacethis",
             "storageProvider": {
               "connectionStringName": "LCU-STORAGE-CONNECTION",
               "partitionCount": 4
