@@ -20,7 +20,7 @@ using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
 using LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis
+namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host
 {
     [Serializable]
     [DataContract]
