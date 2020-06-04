@@ -1,4 +1,4 @@
-﻿$originExists = $false
+$originExists = $false
 
 $status = git status
 
@@ -10,7 +10,7 @@ foreach ($b in $branches)
 {
   if($b.Contains("origin/" + $branchname))
   {
-    git add . -f
+    git add . 
     git commit -m "local commmit"        
     git pull
     git push -u origin $branchName
@@ -22,7 +22,7 @@ foreach ($b in $branches)
 
 if(($branchName.StartsWith("feature/")) -and ($originExists -eq $false))
 {
-    git add . -f
+    git add . 
     git commit -m "adding upstream source and pushing"
     git push -u origin $branchName
     Write-Host Pushed $branchName to upstream origin
