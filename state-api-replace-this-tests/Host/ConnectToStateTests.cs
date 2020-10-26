@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using Fathym;
+using Fathym.API;
 
 namespace state_api_replace_this_tests
 {
@@ -35,7 +37,7 @@ namespace state_api_replace_this_tests
 
             var content = await getContent<BaseResponse<dynamic>>(response);
 
-            Assert.AreEqual(Status.Success, content.Status);           
+            Assert.AreEqual(Status.Success, content.Status);        
 
             throw new NotImplementedException("Implement me!");                  
         }

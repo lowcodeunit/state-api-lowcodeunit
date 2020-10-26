@@ -23,7 +23,7 @@ using LCU.Personas.Enterprises;
 using LCU.Personas.Client.Applications;
 using Fathym.API;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State
+namespace LCU.State.API.ReplaceThis.State
 {
     public class ReplaceThisStateHarness : LCUStateHarness<ReplaceThisState>
     {

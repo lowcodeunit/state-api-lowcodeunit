@@ -17,7 +17,7 @@ using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State
+namespace LCU.State.API.ReplaceThis.State
 {
     [Serializable]
     [DataContract]
