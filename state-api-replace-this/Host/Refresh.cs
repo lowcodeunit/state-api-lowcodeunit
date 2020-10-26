@@ -18,9 +18,9 @@ using LCU.Personas.Client.Applications;
 using LCU.StateAPI.Utilities;
 using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
-using LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State;
+using LCU.State.API.ReplaceThis.State;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host
+namespace LCU.State.API.ReplaceThis.Host
 {
     [Serializable]
     [DataContract]

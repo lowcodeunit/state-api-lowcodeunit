@@ -11,9 +11,9 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using LCU.StateAPI;
 using Microsoft.Azure.Storage.Blob;
 using LCU.StateAPI.Utilities;
-using LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State;
+using LCU.State.API.ReplaceThis.State;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host
+namespace LCU.State.API.ReplaceThis.Host
 {
     public static class ConnectToState
     {

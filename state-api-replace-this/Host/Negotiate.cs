@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
-using LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State;
+using LCU.State.API.ReplaceThis.State;
 
-namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.Host
+namespace LCU.State.API.ReplaceThis.Host
 {
     public static class Negotiate
     {
