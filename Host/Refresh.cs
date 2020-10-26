@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Fathym;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Azure.Storage.Blob;
 using System.Runtime.Serialization;
 using Fathym.API;
 using System.Collections.Generic;

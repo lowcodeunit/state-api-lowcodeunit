@@ -34,8 +34,8 @@ namespace LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State
         #endregion
 
         #region Constructors
-        public ReplaceThisStateHarness(ReplaceThisState state)
-            : base(state ?? new ReplaceThisState())
+        public ReplaceThisStateHarness(ReplaceThisState state, ILogger logger)
+            : base(state ?? new ReplaceThisState(), logger)
         { }
         #endregion
 

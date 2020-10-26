@@ -9,7 +9,7 @@ using System.Security.Claims;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using LCU.StateAPI;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.Azure.Storage.Blob;
 using LCU.StateAPI.Utilities;
 using LCU.State.API.NapkinIDE.NapkinIDE.ReplaceThis.State;
 
