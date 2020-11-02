@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
-    <RootNamespace>state_api_replace_this</RootNamespace>
+    <RootNamespace>state_api_iot_ensemble</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LCU.StateAPI" Version="1.330.20297.3" />

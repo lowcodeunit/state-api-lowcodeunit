@@ -17,14 +17,14 @@ using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
-namespace LCU.State.API.ReplaceThis.State
+namespace LCU.State.API.IoTEnsemble.State
 {
     [Serializable]
     [DataContract]
-    public class ReplaceThisState
+    public class IoTEnsembleState
     {
         #region Constants
-        public const string HUB_NAME = "replacethis";
+        public const string HUB_NAME = "iotensemble";
         #endregion
         
         [DataMember]

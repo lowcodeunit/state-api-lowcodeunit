@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Fathym;
 using Fathym.API;
 
-namespace state_api_replace_this_tests
+namespace LCU.State.API.IoTEnsemble.Tests.Host
 {
     [TestClass]
     public class RefreshTests : AzFunctionTestBase

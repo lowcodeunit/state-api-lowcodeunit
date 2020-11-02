@@ -11,20 +11,20 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using LCU.StateAPI;
 using Microsoft.Azure.Storage.Blob;
 using LCU.StateAPI.Utilities;
-using LCU.State.API.ReplaceThis.State;
+using LCU.State.API.IoTEnsemble.State;
 
-namespace LCU.State.API.ReplaceThis.Host
+namespace LCU.State.API.IoTEnsemble.Host
 {
     public static class ConnectToState
     {
         [FunctionName("ConnectToState")]
         public static async Task<ConnectToStateResponse> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequest req, ILogger log,
             ClaimsPrincipal claimsPrincipal, //[LCUStateDetails]StateDetails stateDetails,
-            [SignalR(HubName = ReplaceThisState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
-            [SignalR(HubName = ReplaceThisState.HUB_NAME)]IAsyncCollector<SignalRGroupAction> signalRGroupActions,
+            [SignalR(HubName = IoTEnsembleState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = IoTEnsembleState.HUB_NAME)]IAsyncCollector<SignalRGroupAction> signalRGroupActions,
             [Blob("state-api/{headers.lcu-ent-api-key}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await signalRMessages.ConnectToState<ReplaceThisState>(req, log, claimsPrincipal, stateBlob, signalRGroupActions);
+            return await signalRMessages.ConnectToState<IoTEnsembleState>(req, log, claimsPrincipal, stateBlob, signalRGroupActions);
         }
     }
 }

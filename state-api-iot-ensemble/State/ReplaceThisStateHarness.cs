@@ -23,9 +23,9 @@ using LCU.Personas.Enterprises;
 using LCU.Personas.Client.Applications;
 using Fathym.API;
 
-namespace LCU.State.API.ReplaceThis.State
+namespace LCU.State.API.IoTEnsemble.State
 {
-    public class ReplaceThisStateHarness : LCUStateHarness<ReplaceThisState>
+    public class IoTEnsembleStateHarness : LCUStateHarness<IoTEnsembleState>
     {
         #region Fields
         #endregion
@@ -34,8 +34,8 @@ namespace LCU.State.API.ReplaceThis.State
         #endregion
 
         #region Constructors
-        public ReplaceThisStateHarness(ReplaceThisState state, ILogger logger)
-            : base(state ?? new ReplaceThisState(), logger)
+        public IoTEnsembleStateHarness(IoTEnsembleState state, ILogger logger)
+            : base(state ?? new IoTEnsembleState(), logger)
         { }
         #endregion
 
