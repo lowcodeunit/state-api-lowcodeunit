@@ -21,49 +21,35 @@ using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
 
-namespace LCU.State.API.IoTEnsemble.Host
+namespace LCU.State.API.IoTEnsemble.Shared
 {
     [Serializable]
     [DataContract]
-    public class RefreshRequest : BaseRequest
+    public class ToggleEmulatedEnabledRequest : BaseRequest
     { }
 
-    public class Refresh
+    public class ToggleEmulatedEnabled
     {
-        protected ApplicationArchitectClient appArch;
-
-        protected EnterpriseArchitectClient entArch;
-
-        protected EnterpriseManagerClient entMgr;
-
         protected SecurityManagerClient secMgr;
 
-        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, 
-            SecurityManagerClient secMgr)
+        public ToggleEmulatedEnabled(SecurityManagerClient secMgr)
         {
-            this.appArch = appArch;
-            
-            this.entArch = entArch;
-            
-            this.entMgr = entMgr;
-            
             this.secMgr = secMgr;
         }
 
-        [FunctionName("Refresh")]
+        [FunctionName("ToggleEmulatedEnabled")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, RefreshRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, ToggleEmulatedEnabledRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, refreshReq, actReq) =>
             {
-                log.LogInformation($"Refresh");
+                log.LogInformation($"ToggleEmulatedEnabled");
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.Refresh(appArch, entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username, 
-                    stateDetails.Host);
+                await harness.ToggleEmulatedEnabled(secMgr);
 
                 return Status.Success;
             });

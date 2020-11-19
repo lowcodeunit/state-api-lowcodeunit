@@ -20,11 +20,11 @@ namespace LCU.State.API.IoTEnsemble.Host
         [FunctionName("ConnectToState")]
         public static async Task<ConnectToStateResponse> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")]HttpRequest req, ILogger log,
             ClaimsPrincipal claimsPrincipal, //[LCUStateDetails]StateDetails stateDetails,
-            [SignalR(HubName = IoTEnsembleState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
-            [SignalR(HubName = IoTEnsembleState.HUB_NAME)]IAsyncCollector<SignalRGroupAction> signalRGroupActions,
-            [Blob("state-api/{headers.lcu-ent-api-key}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRGroupAction> signalRGroupActions,
+            [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await signalRMessages.ConnectToState<IoTEnsembleState>(req, log, claimsPrincipal, stateBlob, signalRGroupActions);
+            return await signalRMessages.ConnectToState<IoTEnsembleSharedState>(req, log, claimsPrincipal, stateBlob, signalRGroupActions);
         }
     }
 }

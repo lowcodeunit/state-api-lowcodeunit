@@ -21,49 +21,38 @@ using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
 
-namespace LCU.State.API.IoTEnsemble.Host
+namespace LCU.State.API.IoTEnsemble.Shared
 {
     [Serializable]
     [DataContract]
-    public class RefreshRequest : BaseRequest
-    { }
+    public class EnrollDeviceRequest : BaseRequest
+    { 
+        [DataMember]
+        public virtual string DeviceName { get; set; }
+    }
 
-    public class Refresh
+    public class EnrollDevice
     {
         protected ApplicationArchitectClient appArch;
 
-        protected EnterpriseArchitectClient entArch;
-
-        protected EnterpriseManagerClient entMgr;
-
-        protected SecurityManagerClient secMgr;
-
-        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, 
-            SecurityManagerClient secMgr)
+        public EnrollDevice(ApplicationArchitectClient appArch)
         {
             this.appArch = appArch;
-            
-            this.entArch = entArch;
-            
-            this.entMgr = entMgr;
-            
-            this.secMgr = secMgr;
         }
 
-        [FunctionName("Refresh")]
+        [FunctionName("EnrollDevice")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, RefreshRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                async (harness, refreshReq, actReq) =>
+            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, EnrollDeviceRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                async (harness, enrollReq, actReq) =>
             {
-                log.LogInformation($"Refresh");
+                log.LogInformation($"EnrollDevice");
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.Refresh(appArch, entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username, 
-                    stateDetails.Host);
+                await harness.EnrollDevice(appArch, enrollReq.DeviceName);
 
                 return Status.Success;
             });

@@ -20,50 +20,40 @@ using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
+using System.Net.Http;
+using System.Net;
+using System.Text;
 
-namespace LCU.State.API.IoTEnsemble.Host
+namespace LCU.State.API.IoTEnsemble.Shared
 {
     [Serializable]
     [DataContract]
-    public class RefreshRequest : BaseRequest
-    { }
-
-    public class Refresh
+    public class ToggleTelemetrySyncRequest : BaseRequest
     {
-        protected ApplicationArchitectClient appArch;
+        [DataMember]
+        public virtual int PageSize { get; set; } = 50;
+    }
 
-        protected EnterpriseArchitectClient entArch;
-
-        protected EnterpriseManagerClient entMgr;
-
+    public class ToggleTelemetrySync
+    {
         protected SecurityManagerClient secMgr;
 
-        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, 
-            SecurityManagerClient secMgr)
+        public ToggleTelemetrySync(SecurityManagerClient secMgr)
         {
-            this.appArch = appArch;
-            
-            this.entArch = entArch;
-            
-            this.entMgr = entMgr;
-            
             this.secMgr = secMgr;
         }
 
-        [FunctionName("Refresh")]
+        [FunctionName("ToggleTelemetrySync")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
-            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, RefreshRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, ToggleTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, refreshReq, actReq) =>
             {
-                log.LogInformation($"Refresh");
+                log.LogInformation($"ToggleTelemetrySync");
 
-                var stateDetails = StateUtils.LoadStateDetails(req);
-
-                await harness.Refresh(appArch, entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username, 
-                    stateDetails.Host);
+                await harness.ToggleTelemetrySyncEnabled(secMgr);
 
                 return Status.Success;
             });
