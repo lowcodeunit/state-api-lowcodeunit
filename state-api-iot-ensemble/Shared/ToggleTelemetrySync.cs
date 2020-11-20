@@ -31,7 +31,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
     public class ToggleTelemetrySyncRequest : BaseRequest
     {
         [DataMember]
-        public virtual int PageSize { get; set; } = 50;
+        public virtual int PageSize { get; set; } = 20;
     }
 
     public class ToggleTelemetrySync
@@ -49,11 +49,11 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
             return await stateBlob.WithStateHarness<IoTEnsembleSharedState, ToggleTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                async (harness, refreshReq, actReq) =>
+                async (harness, dataReq, actReq) =>
             {
                 log.LogInformation($"ToggleTelemetrySync");
 
-                await harness.ToggleTelemetrySyncEnabled(secMgr);
+                await harness.ToggleTelemetrySyncEnabled(secMgr, dataReq.PageSize);
 
                 return Status.Success;
             });

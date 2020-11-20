@@ -103,6 +103,9 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual List<IoTEnsembleDeviceTelemetryPayload> Payloads { get; set; }
 
         [DataMember]
+        public virtual int PageSize { get; set; }
+
+        [DataMember]
         public virtual int RefreshRate { get; set; }
     }
 
