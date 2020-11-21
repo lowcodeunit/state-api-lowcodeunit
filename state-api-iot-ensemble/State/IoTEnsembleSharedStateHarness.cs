@@ -160,11 +160,11 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task<bool> EnrollDevice(ApplicationArchitectClient appArch, string deviceName)
+        public virtual async Task<bool> EnrollDevice(ApplicationArchitectClient appArch, IoTEnsembleDeviceEnrollment device)
         {
             var enrollResp = await appArch.EnrollDevice(new EnrollDeviceRequest()
             {
-                DeviceID = $"{State.UserEnterpriseLookup}-{deviceName}"
+                DeviceID = $"{State.UserEnterpriseLookup}-{device.DeviceName}"
             }, State.UserEnterpriseLookup, DeviceAttestationTypes.SymmetricKey, DeviceEnrollmentTypes.Individual, envLookup: null);
 
             var status = enrollResp.Status;
@@ -259,6 +259,17 @@ namespace LCU.State.API.IoTEnsemble.State
             );
         }
 
+        public virtual async Task<bool> RevokeDeviceEnrollment(ApplicationArchitectClient appArch, string deviceId)
+        {
+            var revokeResp = await appArch.RevokeDeviceEnrollment(deviceId, State.UserEnterpriseLookup, envLookup: null);
+
+            var status = revokeResp.Status;
+
+            await LoadDevices(appArch);
+
+            return false;
+        }
+
         public virtual async Task ToggleDetailsPane(SecurityManagerClient secMgr)
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
@@ -285,7 +296,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 var resp = await secMgr.SetEnterpriseThirdPartyData(State.UserEnterpriseLookup, new Dictionary<string, string>()
                 {
-                    { DETAILS_PANE_ENABLED, enabled.ToString() }
+                    { EMULATED_DEVICE_ENABLED, enabled.ToString() }
                 });
 
                 if (resp.Status)

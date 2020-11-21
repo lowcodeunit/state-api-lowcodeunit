@@ -77,6 +77,14 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
+    public class IoTEnsembleDeviceEnrollment
+    {
+        [DataMember]
+        public virtual string DeviceName { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
     public class IoTEnsembleDeviceInfo : DeviceInfo
     {
         [DataMember]
