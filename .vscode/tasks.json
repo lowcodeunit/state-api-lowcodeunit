@@ -15,6 +15,9 @@
     {
       "label": "clean",
       "command": "dotnet",
+      "options": {
+        "cwd": "${workspaceFolder}/${workspaceFolderBasename}"
+      },
       "args": [
         "clean",
         "/property:GenerateFullPaths=true",
@@ -26,6 +29,9 @@
     {
         "label": "build",
         "command": "dotnet",
+        "options": {
+          "cwd": "${workspaceFolder}/${workspaceFolderBasename}"
+        },        
         "args": [
             "build",
             "/property:GenerateFullPaths=true",
@@ -42,6 +48,9 @@
     {
         "label": "clean release",
         "command": "dotnet",
+        "options": {
+          "cwd": "${workspaceFolder}/${workspaceFolderBasename}"
+        },        
         "args": [
             "clean",
             "--configuration",
@@ -55,6 +64,9 @@
     {
         "label": "publish",
         "command": "dotnet",
+        "options": {
+          "cwd": "${workspaceFolder}/${workspaceFolderBasename}"
+        },        
         "args": [
             "publish",
             "--configuration",
@@ -67,14 +79,25 @@
         "problemMatcher": "$msCompile"
     },
     {
-        "type": "func",
-        "dependsOn": "build",
-        "options": {
-            "cwd": "${workspaceFolder}/bin/Debug/netcoreapp3.1"
-        },
-        "command": "host start",
-        "isBackground": true,
-        "problemMatcher": "$func-watch"
-    }   
+      "type": "shell",
+      "label": "run functions host",
+      "dependsOn": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/${workspaceFolderBasename}/bin/Debug/netcoreapp3.1"
+      },
+      "command": "func host start",
+      "isBackground": true,
+      "problemMatcher": "$func-watch"
+    },
+    {
+      "label": "run all tests",
+      "command": "dotnet test",      
+      "options": {
+        "cwd": "${workspaceFolder}/${workspaceFolderBasename}-tests",        
+      },   
+      "type": "shell",      
+      "group": "test",    
+      "problemMatcher": []
+    }  
   ]
 }

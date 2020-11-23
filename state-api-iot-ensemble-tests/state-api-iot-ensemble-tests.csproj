@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>    
-    <RootNamespace>state_api_replace_this_tests</RootNamespace>
+    <RootNamespace>state_api_iot_ensemble_tests</RootNamespace>
   	<IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>    
