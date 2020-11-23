@@ -98,12 +98,12 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
                 collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
-            // SqlQuery = "SELECT top 2 * FROM c order by c._ts desc")]IEnumerable<object> docs)
+        // SqlQuery = "SELECT top 2 * FROM c order by c._ts desc")]IEnumerable<object> docs)
         {
             return await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
                 stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
                 {
-                    log.LogInformation($"Checking if build and release are complete...");
+                    log.LogInformation($"Loading device telemetry from sync...");
 
                     var loaded = await harness.LoadDeviceTelemetry(secMgr, docClient);
 
@@ -150,12 +150,14 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     if (!context.IsReplaying)
                         log.LogInformation($"Error durring sync process: {synced.ToJSON()}");
 
+                    //  TODO:  Need to call another activity to set the State.DeviceTelemetry.Enabled = false to keep it in sync, maybe set an error message
+
                     break;
                 }
                 else
                 {
-                    var refreshRate = synced.Metadata.ContainsKey("RefreshRate") ? synced.Metadata["RefreshRate"].ToString().As<int>() : 30 ;
-                    
+                    var refreshRate = synced.Metadata.ContainsKey("RefreshRate") ? synced.Metadata["RefreshRate"].ToString().As<int>() : 30;
+
                     // Wait for the next checkpoint
                     var nextCheckpoint = context.CurrentUtcDateTime.AddSeconds(refreshRate);
 

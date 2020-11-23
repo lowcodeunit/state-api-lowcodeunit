@@ -23,6 +23,7 @@ using LCU.Personas.Client.Security;
 using System.Net.Http;
 using System.Net;
 using System.Text;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace LCU.State.API.IoTEnsemble.Shared
 {
@@ -31,7 +32,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
     public class ToggleTelemetrySyncRequest : BaseRequest
     {
         [DataMember]
-        public virtual int PageSize { get; set; } = 20;
+        public virtual int? PageSize { get; set; }
     }
 
     public class ToggleTelemetrySync
@@ -45,6 +46,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
         [FunctionName("ToggleTelemetrySync")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
+            [DurableClient] IDurableOrchestrationClient starter,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
@@ -53,7 +55,10 @@ namespace LCU.State.API.IoTEnsemble.Shared
             {
                 log.LogInformation($"ToggleTelemetrySync");
 
-                await harness.ToggleTelemetrySyncEnabled(secMgr, dataReq.PageSize);
+                var stateDetails = StateUtils.LoadStateDetails(req);
+
+                await harness.ToggleTelemetrySyncEnabled(starter, stateDetails, actReq, secMgr, 
+                    dataReq.PageSize.HasValue ? dataReq.PageSize.Value : 20);
 
                 return Status.Success;
             });

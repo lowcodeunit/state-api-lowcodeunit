@@ -20,6 +20,7 @@ using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace LCU.State.API.IoTEnsemble.Host
 {
@@ -52,6 +53,7 @@ namespace LCU.State.API.IoTEnsemble.Host
 
         [FunctionName("Refresh")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
+            [DurableClient] IDurableOrchestrationClient starter,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
@@ -62,8 +64,8 @@ namespace LCU.State.API.IoTEnsemble.Host
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.Refresh(appArch, entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username, 
-                    stateDetails.Host);
+                await harness.Refresh(starter, stateDetails, actReq, appArch, entArch, entMgr, secMgr, 
+                    stateDetails.EnterpriseLookup, stateDetails.Username, stateDetails.Host);
 
                 return Status.Success;
             });

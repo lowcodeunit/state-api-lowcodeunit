@@ -47,7 +47,7 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual bool Loading { get; set; }
 
         [DataMember]
-        public virtual string SelectedDeviceID { get; set; }
+        public virtual List<string> SelectedDeviceIDs { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleStorageConfiguration Storage { get; set; }
