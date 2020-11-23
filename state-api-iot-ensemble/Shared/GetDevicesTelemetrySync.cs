@@ -20,6 +20,8 @@ using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
+using System.Net.Http;
+using System.Net;
 
 namespace LCU.State.API.IoTEnsemble.Shared
 {
@@ -41,7 +43,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
         }
 
         [FunctionName("GetDevicesTelemetrySync")]
-        public virtual async Task<List<IoTEnsembleDeviceTelemetryPayload>> Run([HttpTrigger] HttpRequest req, ILogger log,
+        public virtual async Task<HttpResponseMessage> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/iotensemble/{headers.x-ms-client-principal-id}/shared", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
@@ -58,12 +60,18 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                payloads = harness.State.DeviceTelemetry.Payloads;
+                payloads = harness.State.DeviceTelemetry?.Payloads ?? new List<IoTEnsembleDeviceTelemetryPayload>();
 
                 return Status.Success;
             });
 
-            return payloads;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    content: payloads.ToJSON(),
+                    encoding: System.Text.Encoding.UTF8,
+                    mediaType: "application/json")
+            };
         }
     }
 }
