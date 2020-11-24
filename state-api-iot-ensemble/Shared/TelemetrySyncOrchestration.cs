@@ -100,15 +100,30 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         // SqlQuery = "SELECT top 2 * FROM c order by c._ts desc")]IEnumerable<object> docs)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
                 stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
                 {
-                    log.LogInformation($"Loading device telemetry from sync...");
+                    log.LogInformation($"Setting Loading device telemetry from sync state...");
 
-                    var loaded = await harness.LoadDeviceTelemetry(secMgr, docClient);
+                    harness.State.DeviceTelemetry.Loading = true;
 
-                    return loaded;
+                    return Status.Success;
                 }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
+                    stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
+                    {
+                        log.LogInformation($"Loading device telemetry from sync...");
+
+                        var loaded = await harness.LoadDeviceTelemetry(secMgr, docClient);
+
+                        harness.State.DeviceTelemetry.Loading = false;
+
+                        return loaded;
+                    }, preventStatusException: true);
+
+            return status;
             // });
         }
 

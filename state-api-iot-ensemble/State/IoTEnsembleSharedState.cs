@@ -108,6 +108,9 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual bool Enabled { get; set; }
 
         [DataMember]
+        public virtual bool Loading { get; set; }
+
+        [DataMember]
         public virtual List<IoTEnsembleDeviceTelemetryPayload> Payloads { get; set; }
 
         [DataMember]
