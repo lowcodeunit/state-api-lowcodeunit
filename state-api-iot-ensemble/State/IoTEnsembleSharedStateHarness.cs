@@ -198,10 +198,20 @@ namespace LCU.State.API.IoTEnsemble.State
             var isStartState = existingOrch?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
                 existingOrch?.RuntimeStatus == OrchestrationRuntimeStatus.Pending;
 
+            log.LogInformation($"Is enabled ({State.Telemetry.Enabled}) vs start state ({isStartState})...");
+
             if (State.Telemetry.Enabled && !isStartState)
+            {
+                log.LogInformation($"Sarting TelemetrySyncOrchestration: {instanceId}");
+
                 await starter.StartAction("TelemetrySyncOrchestration", stateDetails, exActReq, log, instanceId: instanceId);
+            }
             else if (!State.Telemetry.Enabled && isStartState)
+            {
+                log.LogInformation($"Terminating TelemetrySyncOrchestration: {instanceId}");
+
                 await starter.TerminateAsync(instanceId, "Device Telemetry has been disbaled.");
+            }
         }
 
         public virtual async Task EnsureUserEnterprise(EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr,
