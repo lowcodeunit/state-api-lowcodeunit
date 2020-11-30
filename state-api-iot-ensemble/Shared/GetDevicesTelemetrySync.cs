@@ -47,7 +47,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/iotensemble/{headers.x-ms-client-principal-id}/shared", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            List<IoTEnsembleDeviceTelemetryPayload> payloads = null;
+            List<IoTEnsembleTelemetryPayload> payloads = null;
 
             req.Headers.Add("lcu-hub-name", "iotensemble");
 
@@ -60,7 +60,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                payloads = harness.State.DeviceTelemetry?.Payloads ?? new List<IoTEnsembleDeviceTelemetryPayload>();
+                payloads = harness.State.Telemetry?.Payloads ?? new List<IoTEnsembleTelemetryPayload>();
 
                 return Status.Success;
             });

@@ -105,7 +105,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 {
                     log.LogInformation($"Setting Loading device telemetry from sync state...");
 
-                    harness.State.DeviceTelemetry.Loading = true;
+                    harness.State.Telemetry.Loading = true;
 
                     return Status.Success;
                 }, preventStatusException: true);
@@ -116,9 +116,9 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     {
                         log.LogInformation($"Loading device telemetry from sync...");
 
-                        var loaded = await harness.LoadDeviceTelemetry(secMgr, docClient);
+                        var loaded = await harness.LoadTelemetry(secMgr, docClient);
 
-                        harness.State.DeviceTelemetry.Loading = false;
+                        harness.State.Telemetry.Loading = false;
 
                         return loaded;
                     }, preventStatusException: true);
@@ -165,7 +165,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     if (!context.IsReplaying)
                         log.LogInformation($"Error durring sync process: {synced.ToJSON()}");
 
-                    //  TODO:  Need to call another activity to set the State.DeviceTelemetry.Enabled = false to keep it in sync, maybe set an error message
+                    //  TODO:  Need to call another activity to set the State.Telemetry.Enabled = false to keep it in sync, maybe set an error message
 
                     break;
                 }
