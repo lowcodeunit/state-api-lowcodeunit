@@ -198,7 +198,7 @@ namespace LCU.State.API.IoTEnsemble.State
             var isStartState = existingOrch?.RuntimeStatus == OrchestrationRuntimeStatus.Running ||
                 existingOrch?.RuntimeStatus == OrchestrationRuntimeStatus.Pending;
 
-            log.LogInformation($"Is enabled ({State.Telemetry.Enabled}) vs start state ({isStartState})...");
+            log.LogInformation($"Is telemetry sync enabled ({State.Telemetry.Enabled}) vs start state ({isStartState})...");
 
             if (State.Telemetry.Enabled && !isStartState)
             {
