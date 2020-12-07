@@ -32,8 +32,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
     [DataContract]
     public class ToggleTelemetrySyncRequest : BaseRequest
     {
-        [DataMember]
-        public virtual int? PageSize { get; set; }
+        
     }
 
     public class ToggleTelemetrySync
@@ -62,8 +61,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.ToggleTelemetrySyncEnabled(starter, stateDetails, actReq, secMgr, 
-                    dataReq.PageSize.HasValue ? dataReq.PageSize.Value : 20, docClient);
+                await harness.ToggleTelemetrySyncEnabled(starter, stateDetails, actReq, secMgr, docClient);
 
                 return Status.Success;
             });

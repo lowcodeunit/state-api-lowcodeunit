@@ -278,9 +278,11 @@ namespace LCU.State.API.IoTEnsemble.State
                     if (!payloads.IsNullOrEmpty())
                         State.Telemetry.Payloads.AddRange(payloads);
 
-                    status.Metadata["RefreshRate"] = State.Telemetry.RefreshRate > 10 ? State.Telemetry.RefreshRate : 30;
+                    status.Metadata["RefreshRate"] = State.Telemetry.RefreshRate >= 10 ? State.Telemetry.RefreshRate : 30;
 
                     State.Telemetry.RefreshRate = status.Metadata["RefreshRate"].ToString().As<int>();
+
+                    State.Telemetry.LastSyncedAt = DateTime.Now;
                 }
                 catch (Exception ex)
                 {
@@ -358,12 +360,10 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task ToggleTelemetrySyncEnabled(IDurableOrchestrationClient starter, StateDetails stateDetails,
-            ExecuteActionRequest exActReq, SecurityManagerClient secMgr, int pageSize, DocumentClient client)
+            ExecuteActionRequest exActReq, SecurityManagerClient secMgr, DocumentClient client)
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                State.Telemetry.PageSize = pageSize;
-
                 await setTelemetryEnabled(secMgr, !State.Telemetry.Enabled);
 
                 await EnsureTelemetrySyncState(starter, stateDetails, exActReq);
@@ -373,6 +373,21 @@ namespace LCU.State.API.IoTEnsemble.State
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
+
+        public virtual async Task UpdateTelemetrySync(int refreshRate, int pageSize){
+            if (!State.UserEnterpriseLookup.IsNullOrEmpty())
+            {
+                
+                State.Telemetry.RefreshRate = refreshRate;
+
+                State.Telemetry.PageSize = pageSize;
+
+            }
+            else
+                throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
+        }
+
+        
         #endregion
 
         #region Helpers

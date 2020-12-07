@@ -118,6 +118,9 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual int RefreshRate { get; set; }
+
+        [DataMember]
+        public virtual DateTime LastSyncedAt {get; set;}
     }
 
     [Serializable]
