@@ -61,7 +61,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
             return await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
             {
-                log.LogInformation($"ToggleTelemetrySync");
+                log.LogInformation($"UpdateTelemetrySync");
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
