@@ -24,6 +24,7 @@ using System.Net.Http;
 using System.Net;
 using System.Text;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using Microsoft.Azure.Documents.Client;
 
 namespace LCU.State.API.IoTEnsemble.Shared
 {
@@ -31,8 +32,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
     [DataContract]
     public class ToggleTelemetrySyncRequest : BaseRequest
     {
-        [DataMember]
-        public virtual int? PageSize { get; set; }
+        
     }
 
     public class ToggleTelemetrySync
@@ -48,7 +48,11 @@ namespace LCU.State.API.IoTEnsemble.Shared
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
             [DurableClient] IDurableOrchestrationClient starter,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
-            [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
+            [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
+            [CosmosDB(
+                databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
+                collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
+                ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         {
             return await stateBlob.WithStateHarness<IoTEnsembleSharedState, ToggleTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
@@ -57,8 +61,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.ToggleTelemetrySyncEnabled(starter, stateDetails, actReq, secMgr, 
-                    dataReq.PageSize.HasValue ? dataReq.PageSize.Value : 20);
+                await harness.ToggleTelemetrySyncEnabled(starter, stateDetails, actReq, secMgr, docClient);
 
                 return Status.Success;
             });

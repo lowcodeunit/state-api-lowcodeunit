@@ -35,7 +35,7 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
 
         [DataMember]
-        public virtual IoTEnsembleDeviceTelemetry DeviceTelemetry { get; set; }
+        public virtual IoTEnsembleTelemetry Telemetry { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleDrawersConfig Drawers { get; set; }
@@ -102,24 +102,30 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
-    public class IoTEnsembleDeviceTelemetry
+    public class IoTEnsembleTelemetry
     {
         [DataMember]
         public virtual bool Enabled { get; set; }
 
         [DataMember]
-        public virtual List<IoTEnsembleDeviceTelemetryPayload> Payloads { get; set; }
+        public virtual bool Loading { get; set; }
+
+        [DataMember]
+        public virtual List<IoTEnsembleTelemetryPayload> Payloads { get; set; }
 
         [DataMember]
         public virtual int PageSize { get; set; }
 
         [DataMember]
         public virtual int RefreshRate { get; set; }
+
+        [DataMember]
+        public virtual DateTime LastSyncedAt {get; set;}
     }
 
     [Serializable]
     [DataContract]
-    public class IoTEnsembleDeviceTelemetryPayload : MetadataModel
+    public class IoTEnsembleTelemetryPayload : MetadataModel
     {
         [DataMember]
         public virtual long _ts { get; set; }

@@ -100,15 +100,33 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         // SqlQuery = "SELECT top 2 * FROM c order by c._ts desc")]IEnumerable<object> docs)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
                 stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
                 {
-                    log.LogInformation($"Loading device telemetry from sync...");
+                    log.LogInformation($"Setting Loading device telemetry from sync state...");
 
-                    var loaded = await harness.LoadDeviceTelemetry(secMgr, docClient);
+                    if (harness.State.Telemetry == null)
+                        harness.State.Telemetry = new IoTEnsembleTelemetry();
 
-                    return loaded;
+                    harness.State.Telemetry.Loading = true;
+
+                    return Status.Success;
                 }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
+                    stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
+                    {
+                        log.LogInformation($"Loading device telemetry from sync...");
+
+                        var loaded = await harness.LoadTelemetry(secMgr, docClient);
+
+                        harness.State.Telemetry.Loading = false;
+
+                        return loaded;
+                    }, preventStatusException: true);
+
+            return status;
             // });
         }
 
@@ -150,7 +168,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     if (!context.IsReplaying)
                         log.LogInformation($"Error durring sync process: {synced.ToJSON()}");
 
-                    //  TODO:  Need to call another activity to set the State.DeviceTelemetry.Enabled = false to keep it in sync, maybe set an error message
+                    //  TODO:  Need to call another activity to set the State.Telemetry.Enabled = false to keep it in sync, maybe set an error message
 
                     break;
                 }
