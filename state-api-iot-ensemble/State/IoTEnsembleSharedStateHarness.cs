@@ -374,10 +374,11 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task UpdateTelemetrySync(int refreshRate, int pageSize){
+        public virtual async Task UpdateTelemetrySync(int refreshRate, int pageSize)
+        {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                
+
                 State.Telemetry.RefreshRate = refreshRate;
 
                 State.Telemetry.PageSize = pageSize;
@@ -386,8 +387,6 @@ namespace LCU.State.API.IoTEnsemble.State
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
-
-        
         #endregion
 
         #region Helpers

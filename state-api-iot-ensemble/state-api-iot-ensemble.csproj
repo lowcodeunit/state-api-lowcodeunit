@@ -5,7 +5,7 @@
     <RootNamespace>state_api_iot_ensemble</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LCU.StateAPI" Version="1.345.20328.8" />
+    <PackageReference Include="LCU.StateAPI" Version="1.348.20351.4" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.7" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.1" />
