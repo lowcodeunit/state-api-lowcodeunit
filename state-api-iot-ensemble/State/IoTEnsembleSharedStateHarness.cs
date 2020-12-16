@@ -245,13 +245,14 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
-            State.Devices = devicesResp.Model?.Select(m =>
+            State.ConnectedDevicesConfig.Devices = devicesResp.Model?.Select(m =>
             {
                 var devInfo = m.JSONConvert<IoTEnsembleDeviceInfo>();
 
                 devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
 
                 return devInfo;
+                
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
         }
 
