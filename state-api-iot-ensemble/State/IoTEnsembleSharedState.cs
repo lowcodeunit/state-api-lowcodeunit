@@ -29,14 +29,10 @@ namespace LCU.State.API.IoTEnsemble.State
         #endregion
 
         [DataMember]
-        public virtual IoTEnsembleConnectedDevicesConfig ConnectedDeviceConfig { get; set; }
+        public virtual IoTEnsembleConnectedDevicesConfig ConnectedDevicesConfig { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleDashboardConfiguration Dashboard { get; set; }
-
-        [DataMember]
-        public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
-
 
         [DataMember]
         public virtual IoTEnsembleTelemetry Telemetry { get; set; }
@@ -81,7 +77,11 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
-    public class IoTEnsembleConnectedDevicesConfig {
+    public class IoTEnsembleConnectedDevicesConfig 
+    {
+        [DataMember]
+        public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
+
         [DataMember]
         public virtual int PageSize { get; set; }
     }

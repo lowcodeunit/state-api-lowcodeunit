@@ -39,12 +39,6 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
     public class UpdateConnectedDevicesSync
     {
-        protected SecurityManagerClient secMgr;
-
-        public UpdateConnectedDevicesSync(SecurityManagerClient secMgr)
-        {
-            this.secMgr = secMgr;
-        }
 
         [FunctionName("UpdateConnectedDevicesSync")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,

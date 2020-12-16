@@ -390,7 +390,7 @@ namespace LCU.State.API.IoTEnsemble.State
          public virtual async Task UpdateConnectedDevicesSync(int pageSize){
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                State.ConnectedDeviceConfig.PageSize = pageSize;
+                State.ConnectedDevicesConfig.PageSize = pageSize;
 
             }
             else
