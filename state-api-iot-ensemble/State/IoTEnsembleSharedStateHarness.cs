@@ -241,6 +241,15 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to establish the user's enterprise, please try again.");
         }
 
+        public virtual async Task IssueDeviceSASToken(ApplicationArchitectClient appArch, string deviceName, int expiryInSeconds)
+        {
+            var deviceSasResp = await appArch.IssueDeviceSASToken(State.UserEnterpriseLookup, deviceName, expiryInSeconds: expiryInSeconds,
+                envLookup: null);
+
+            if (deviceSasResp.Status)
+                State.LatestDeviceSASTokens[deviceName] = deviceSasResp.Model;
+        }
+
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
@@ -253,6 +262,8 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 return devInfo;
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
+
+            State.LatestDeviceSASTokens = new Dictionary<string, string>();
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)
@@ -319,6 +330,20 @@ namespace LCU.State.API.IoTEnsemble.State
             var status = revokeResp.Status;
 
             await LoadDevices(appArch);
+
+            return false;
+        }
+
+        public virtual async Task<bool> SendDeviceMessage(ApplicationArchitectClient appArch, string deviceName,
+            IoTEnsembleTelemetryPayload payload)
+        {
+            if (payload.Metadata.ContainsKey("id"))
+                payload.Metadata.Remove("id");
+                
+            var sendResp = await appArch.SendDeviceMessage(payload.JSONConvert<MetadataModel>(), State.UserEnterpriseLookup,
+                deviceName, envLookup: null);
+
+            var status = sendResp.Status;
 
             return false;
         }

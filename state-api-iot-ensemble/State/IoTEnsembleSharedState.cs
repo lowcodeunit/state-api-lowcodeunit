@@ -35,13 +35,13 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
 
         [DataMember]
-        public virtual IoTEnsembleTelemetry Telemetry { get; set; }
-
-        [DataMember]
         public virtual IoTEnsembleDrawersConfig Drawers { get; set; }
 
         [DataMember]
         public virtual EmulatedDeviceInfo Emulated { get; set; }
+
+        [DataMember]
+        public virtual Dictionary<string, string> LatestDeviceSASTokens { get; set; }
 
         [DataMember]
         public virtual bool Loading { get; set; }
@@ -51,6 +51,9 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual IoTEnsembleStorageConfiguration Storage { get; set; }
+
+        [DataMember]
+        public virtual IoTEnsembleTelemetry Telemetry { get; set; }
 
         [DataMember]
         public virtual string UserEnterpriseLookup { get; set; }
@@ -145,6 +148,9 @@ namespace LCU.State.API.IoTEnsemble.State
         [DataMember]
         [JsonProperty("id")]
         public virtual string ID { get; set; }
+
+        [DataMember]
+        public virtual MetadataModel SensorMetadata { get; set; }
 
         [DataMember]
         public virtual MetadataModel SensorReadings { get; set; }
