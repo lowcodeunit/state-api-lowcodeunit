@@ -252,6 +252,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
 
                 return devInfo;
+                
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
         }
 
