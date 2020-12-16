@@ -29,10 +29,14 @@ namespace LCU.State.API.IoTEnsemble.State
         #endregion
 
         [DataMember]
+        public virtual IoTEnsembleConnectedDevicesConfig ConnectedDeviceConfig { get; set; }
+
+        [DataMember]
         public virtual IoTEnsembleDashboardConfiguration Dashboard { get; set; }
 
         [DataMember]
         public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
+
 
         [DataMember]
         public virtual IoTEnsembleTelemetry Telemetry { get; set; }
@@ -73,6 +77,13 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual MetadataModel PowerBIConfig { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleConnectedDevicesConfig {
+        [DataMember]
+        public virtual int PageSize { get; set; }
     }
 
     [Serializable]
