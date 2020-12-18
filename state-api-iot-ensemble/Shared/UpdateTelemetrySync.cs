@@ -58,17 +58,37 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
-            {
-                log.LogInformation($"UpdateTelemetrySync");
+                {
+                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
 
-                var stateDetails = StateUtils.LoadStateDetails(req);
+                    if (harness.State.Telemetry == null)
+                        harness.State.Telemetry = new IoTEnsembleTelemetry();
 
-                await harness.UpdateTelemetrySync(dataReq.RefreshRate, dataReq.PageSize);
+                    harness.State.Telemetry.Loading = true;
 
-                return Status.Success;
-            });
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            req.Body.Seek(0, SeekOrigin.Begin);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                    async (harness, dataReq, actReq) =>
+                    {
+                        log.LogInformation($"UpdateTelemetrySync");
+
+                        var stateDetails = StateUtils.LoadStateDetails(req);
+
+                        await harness.UpdateTelemetrySync(secMgr, docClient, dataReq.RefreshRate, dataReq.PageSize);
+
+                        harness.State.Telemetry.Loading = false;
+
+                        return Status.Success;
+                    });
+
+            return status;
         }
     }
 }
