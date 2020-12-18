@@ -252,7 +252,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
-            if(State.ConnectedDevicesConfig == null)
+            if (State.ConnectedDevicesConfig == null)
                 State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
 
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
@@ -278,13 +278,14 @@ namespace LCU.State.API.IoTEnsemble.State
                 State.Telemetry = new IoTEnsembleTelemetry()
                 {
                     RefreshRate = 30,
-                    PageSize = 20
+                    PageSize = 20,
+                    Payloads = new List<IoTEnsembleTelemetryPayload>()
                 };
-
-            State.Telemetry.Payloads = new List<IoTEnsembleTelemetryPayload>();
 
             if (State.Telemetry.Enabled)
             {
+                State.Telemetry.Payloads = new List<IoTEnsembleTelemetryPayload>();
+
                 try
                 {
                     var payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup,
@@ -343,7 +344,7 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             if (payload.Metadata.ContainsKey("id"))
                 payload.Metadata.Remove("id");
-                
+
             var sendResp = await appArch.SendDeviceMessage(payload.JSONConvert<MetadataModel>(), State.UserEnterpriseLookup,
                 deviceName, envLookup: null);
 
@@ -417,7 +418,8 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-         public virtual async Task UpdateConnectedDevicesSync(int pageSize){
+        public virtual async Task UpdateConnectedDevicesSync(int pageSize)
+        {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
                 State.ConnectedDevicesConfig.PageSize = pageSize;
@@ -426,7 +428,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        
+
         #endregion
 
         #region Helpers
