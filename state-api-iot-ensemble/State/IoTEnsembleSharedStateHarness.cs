@@ -252,6 +252,12 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
+            
+            if(State.ConnectedDevicesConfig == null)
+            {
+                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+            }
+
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
             State.ConnectedDevicesConfig.Devices = devicesResp.Model?.Select(m =>
@@ -261,7 +267,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
 
                 return devInfo;
-                
+
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
 
             State.LatestDeviceSASTokens = new Dictionary<string, string>();
@@ -418,7 +424,6 @@ namespace LCU.State.API.IoTEnsemble.State
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
                 State.ConnectedDevicesConfig.PageSize = pageSize;
-
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
