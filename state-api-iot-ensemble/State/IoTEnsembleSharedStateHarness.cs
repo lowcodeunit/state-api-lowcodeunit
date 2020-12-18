@@ -339,18 +339,25 @@ namespace LCU.State.API.IoTEnsemble.State
             return false;
         }
 
-        public virtual async Task<bool> SendDeviceMessage(ApplicationArchitectClient appArch, string deviceName,
-            IoTEnsembleTelemetryPayload payload)
+        public virtual async Task<Status> SendDeviceMessage(ApplicationArchitectClient appArch, SecurityManagerClient secMgr,
+            DocumentClient client, string deviceName, IoTEnsembleTelemetryPayload payload)
         {
-            if (payload.Metadata.ContainsKey("id"))
-                payload.Metadata.Remove("id");
+            var payloadMeta = payload.JSONConvert<MetadataModel>();
 
-            var sendResp = await appArch.SendDeviceMessage(payload.JSONConvert<MetadataModel>(), State.UserEnterpriseLookup,
+            if (payloadMeta.Metadata.ContainsKey("id"))
+                payloadMeta.Metadata.Remove("id");
+
+            var sendResp = await appArch.SendDeviceMessage(payloadMeta, State.UserEnterpriseLookup,
                 deviceName, envLookup: null);
 
-            var status = sendResp.Status;
+            if (sendResp.Status)
+            {
+                await Task.Delay(1000);
 
-            return false;
+                await LoadTelemetry(secMgr, client);
+            }
+
+            return sendResp.Status;
         }
 
         public virtual async Task ToggleDetailsPane(SecurityManagerClient secMgr)
@@ -404,15 +411,15 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task UpdateTelemetrySync(int refreshRate, int pageSize)
+        public virtual async Task UpdateTelemetrySync(SecurityManagerClient secMgr, DocumentClient client, int refreshRate, int pageSize)
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-
                 State.Telemetry.RefreshRate = refreshRate;
 
                 State.Telemetry.PageSize = pageSize;
 
+                await LoadTelemetry(secMgr, client);
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
