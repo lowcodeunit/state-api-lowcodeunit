@@ -252,11 +252,8 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
-            
             if(State.ConnectedDevicesConfig == null)
-            {
                 State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
-            }
 
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
