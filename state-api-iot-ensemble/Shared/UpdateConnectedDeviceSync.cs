@@ -30,25 +30,17 @@ namespace LCU.State.API.IoTEnsemble.Shared
 {
     [Serializable]
     [DataContract]
-    public class UpdateTelemetrySyncRequest : BaseRequest
+    public class UpdateConnectedDevicesSyncRequest : BaseRequest
     {
-        [DataMember]
-        public virtual int RefreshRate { get; set; }
 
         [DataMember]
         public virtual int PageSize { get; set; }
     }
 
-    public class UpdateTelemetrySync
+    public class UpdateConnectedDevicesSync
     {
-        protected SecurityManagerClient secMgr;
 
-        public UpdateTelemetrySync(SecurityManagerClient secMgr)
-        {
-            this.secMgr = secMgr;
-        }
-
-        [FunctionName("UpdateTelemetrySync")]
+        [FunctionName("UpdateConnectedDevicesSync")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
             [DurableClient] IDurableOrchestrationClient starter,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
@@ -58,37 +50,17 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         {
-            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateConnectedDevicesSyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
-                {
-                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
+            {
+                log.LogInformation($"UpdateConnectedDevicesSync");
 
-                    if (harness.State.Telemetry == null)
-                        harness.State.Telemetry = new IoTEnsembleTelemetry();
+                var stateDetails = StateUtils.LoadStateDetails(req);
 
-                    harness.State.Telemetry.Loading = true;
+                await harness.UpdateConnectedDevicesSync(dataReq.PageSize);
 
-                    return Status.Success;
-                }, preventStatusException: true);
-
-            req.Body.Seek(0, SeekOrigin.Begin);
-
-            if (status)
-                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                    async (harness, dataReq, actReq) =>
-                    {
-                        log.LogInformation($"UpdateTelemetrySync");
-
-                        var stateDetails = StateUtils.LoadStateDetails(req);
-
-                        await harness.UpdateTelemetrySync(secMgr, docClient, dataReq.RefreshRate, dataReq.PageSize);
-
-                        harness.State.Telemetry.Loading = false;
-
-                        return Status.Success;
-                    });
-
-            return status;
+                return Status.Success;
+            });
         }
     }
 }

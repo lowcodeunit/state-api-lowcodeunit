@@ -29,19 +29,19 @@ namespace LCU.State.API.IoTEnsemble.State
         #endregion
 
         [DataMember]
+        public virtual IoTEnsembleConnectedDevicesConfig ConnectedDevicesConfig { get; set; }
+
+        [DataMember]
         public virtual IoTEnsembleDashboardConfiguration Dashboard { get; set; }
-
-        [DataMember]
-        public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
-
-        [DataMember]
-        public virtual IoTEnsembleTelemetry Telemetry { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleDrawersConfig Drawers { get; set; }
 
         [DataMember]
         public virtual EmulatedDeviceInfo Emulated { get; set; }
+
+        [DataMember]
+        public virtual Dictionary<string, string> LatestDeviceSASTokens { get; set; }
 
         [DataMember]
         public virtual bool Loading { get; set; }
@@ -51,6 +51,9 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual IoTEnsembleStorageConfiguration Storage { get; set; }
+
+        [DataMember]
+        public virtual IoTEnsembleTelemetry Telemetry { get; set; }
 
         [DataMember]
         public virtual string UserEnterpriseLookup { get; set; }
@@ -73,6 +76,17 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual MetadataModel PowerBIConfig { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleConnectedDevicesConfig 
+    {
+        [DataMember]
+        public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
+
+        [DataMember]
+        public virtual int PageSize { get; set; }
     }
 
     [Serializable]
@@ -145,6 +159,9 @@ namespace LCU.State.API.IoTEnsemble.State
         [DataMember]
         [JsonProperty("id")]
         public virtual string ID { get; set; }
+
+        [DataMember]
+        public virtual MetadataModel SensorMetadata { get; set; }
 
         [DataMember]
         public virtual MetadataModel SensorReadings { get; set; }

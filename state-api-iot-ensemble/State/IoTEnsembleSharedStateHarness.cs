@@ -241,18 +241,33 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to establish the user's enterprise, please try again.");
         }
 
+        public virtual async Task IssueDeviceSASToken(ApplicationArchitectClient appArch, string deviceName, int expiryInSeconds)
+        {
+            var deviceSasResp = await appArch.IssueDeviceSASToken(State.UserEnterpriseLookup, deviceName, expiryInSeconds: expiryInSeconds,
+                envLookup: null);
+
+            if (deviceSasResp.Status)
+                State.LatestDeviceSASTokens[deviceName] = deviceSasResp.Model;
+        }
+
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
+            if (State.ConnectedDevicesConfig == null)
+                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
-            State.Devices = devicesResp.Model?.Select(m =>
+            State.ConnectedDevicesConfig.Devices = devicesResp.Model?.Select(m =>
             {
                 var devInfo = m.JSONConvert<IoTEnsembleDeviceInfo>();
 
                 devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
 
                 return devInfo;
+
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
+
+            State.LatestDeviceSASTokens = new Dictionary<string, string>();
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)
@@ -263,13 +278,14 @@ namespace LCU.State.API.IoTEnsemble.State
                 State.Telemetry = new IoTEnsembleTelemetry()
                 {
                     RefreshRate = 30,
-                    PageSize = 20
+                    PageSize = 20,
+                    Payloads = new List<IoTEnsembleTelemetryPayload>()
                 };
-
-            State.Telemetry.Payloads = new List<IoTEnsembleTelemetryPayload>();
 
             if (State.Telemetry.Enabled)
             {
+                State.Telemetry.Payloads = new List<IoTEnsembleTelemetryPayload>();
+
                 try
                 {
                     var payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup,
@@ -323,6 +339,27 @@ namespace LCU.State.API.IoTEnsemble.State
             return false;
         }
 
+        public virtual async Task<Status> SendDeviceMessage(ApplicationArchitectClient appArch, SecurityManagerClient secMgr,
+            DocumentClient client, string deviceName, IoTEnsembleTelemetryPayload payload)
+        {
+            var payloadMeta = payload.JSONConvert<MetadataModel>();
+
+            if (payloadMeta.Metadata.ContainsKey("id"))
+                payloadMeta.Metadata.Remove("id");
+
+            var sendResp = await appArch.SendDeviceMessage(payloadMeta, State.UserEnterpriseLookup,
+                deviceName, envLookup: null);
+
+            if (sendResp.Status)
+            {
+                await Task.Delay(1000);
+
+                await LoadTelemetry(secMgr, client);
+            }
+
+            return sendResp.Status;
+        }
+
         public virtual async Task ToggleDetailsPane(SecurityManagerClient secMgr)
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
@@ -374,20 +411,31 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task UpdateTelemetrySync(int refreshRate, int pageSize){
+        public virtual async Task UpdateTelemetrySync(SecurityManagerClient secMgr, DocumentClient client, int refreshRate, int pageSize)
+        {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                
                 State.Telemetry.RefreshRate = refreshRate;
 
                 State.Telemetry.PageSize = pageSize;
 
+                await LoadTelemetry(secMgr, client);
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        
+        public virtual async Task UpdateConnectedDevicesSync(int pageSize)
+        {
+            if (!State.UserEnterpriseLookup.IsNullOrEmpty())
+            {
+                State.ConnectedDevicesConfig.PageSize = pageSize;
+            }
+            else
+                throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
+        }
+
+
         #endregion
 
         #region Helpers
