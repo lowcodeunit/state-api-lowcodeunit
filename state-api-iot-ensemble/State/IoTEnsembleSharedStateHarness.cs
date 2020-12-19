@@ -340,19 +340,17 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task<Status> SendDeviceMessage(ApplicationArchitectClient appArch, SecurityManagerClient secMgr,
-            DocumentClient client, string deviceName, IoTEnsembleTelemetryPayload payload)
+            DocumentClient client, string deviceName, MetadataModel payload)
         {
-            var payloadMeta = payload.JSONConvert<MetadataModel>();
+            if (payload.Metadata.ContainsKey("id"))
+                payload.Metadata.Remove("id");
 
-            if (payloadMeta.Metadata.ContainsKey("id"))
-                payloadMeta.Metadata.Remove("id");
-
-            var sendResp = await appArch.SendDeviceMessage(payloadMeta, State.UserEnterpriseLookup,
+            var sendResp = await appArch.SendDeviceMessage(payload, State.UserEnterpriseLookup,
                 deviceName, envLookup: null);
 
             if (sendResp.Status)
             {
-                await Task.Delay(1000);
+                await Task.Delay(2500);
 
                 await LoadTelemetry(secMgr, client);
             }

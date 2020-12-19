@@ -32,7 +32,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
         public virtual string DeviceName { get; set; }
 
         [DataMember]
-        public virtual IoTEnsembleTelemetryPayload Payload { get; set; }
+        public virtual MetadataModel Payload { get; set; }
     }
 
     public class SendDeviceMessage
@@ -69,8 +69,6 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                     return Status.Success;
                 }, preventStatusException: true);
-
-            req.Body.Seek(0, SeekOrigin.Begin);
 
             if (status)
                 status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, SendDeviceMessageRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
