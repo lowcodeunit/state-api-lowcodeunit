@@ -71,8 +71,6 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     return Status.Success;
                 }, preventStatusException: true);
 
-            req.Body.Seek(0, SeekOrigin.Begin);
-
             if (status)
                 status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                     async (harness, dataReq, actReq) =>
