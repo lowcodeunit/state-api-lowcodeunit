@@ -82,10 +82,10 @@ namespace LCU.State.API.IoTEnsemble.Shared
                         stateCtxt.ActionRequest = new Presentation.State.ReqRes.ExecuteActionRequest();
 
                     stateCtxt.ActionRequest.Arguments = status.JSONConvert<MetadataModel>();
-
-                    status = await context.CallActivityAsync<Status>("TelemetrySyncOrchestration_UpdateStatus", stateCtxt);
                 }
             }
+
+            status = await context.CallActivityAsync<Status>("TelemetrySyncOrchestration_Disabled", stateCtxt);
 
             return status;
         }
@@ -98,7 +98,6 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
                 collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
-        // SqlQuery = "SELECT top 2 * FROM c order by c._ts desc")]IEnumerable<object> docs)
         {
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
                 stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
@@ -127,9 +126,28 @@ namespace LCU.State.API.IoTEnsemble.Shared
                     }, preventStatusException: true);
 
             return status;
-            // });
         }
 
+        [FunctionName("TelemetrySyncOrchestration_Disabled")]
+        public virtual async Task<Status> Disabled([ActivityTrigger] StateActionContext stateCtxt, ILogger log,
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
+            [Blob("state-api/{stateCtxt.StateDetails.EnterpriseLookup}/{stateCtxt.StateDetails.HubName}/{stateCtxt.StateDetails.Username}/{stateCtxt.StateDetails.StateKey}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
+        {
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
+                stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>
+                {
+                    log.LogInformation($"Setting device telemetry disabled...");
+
+                    if (harness.State.Telemetry == null)
+                        harness.State.Telemetry = new IoTEnsembleTelemetry();
+
+                    harness.State.Telemetry.Enabled = false;
+
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            return status;
+        }
         #endregion
 
         #region Helpers
