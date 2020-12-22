@@ -29,6 +29,12 @@ namespace LCU.State.API.IoTEnsemble.State
         #endregion
 
         [DataMember]
+        public virtual string AccessLicenseType { get; set; }
+
+        [DataMember]
+        public virtual string AccessPlanGroup { get; set; }
+
+        [DataMember]
         public virtual IoTEnsembleConnectedDevicesConfig ConnectedDevicesConfig { get; set; }
 
         [DataMember]
@@ -39,6 +45,12 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual EmulatedDeviceInfo Emulated { get; set; }
+
+        [DataMember]
+        public virtual ErrorContext Error { get; set; }
+
+        [DataMember]
+        public virtual bool HasAccess { get; set; }
 
         [DataMember]
         public virtual Dictionary<string, string> LatestDeviceSASTokens { get; set; }
@@ -69,6 +81,26 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
+    public class ErrorContext
+    {
+        [DataMember]
+        public virtual string ActionPath { get; set; }
+
+        [DataMember]
+        public virtual string ActionTarget { get; set; }
+
+        [DataMember]
+        public virtual string ActionText { get; set; }
+
+        [DataMember]
+        public virtual string Message { get; set; }
+
+        [DataMember]
+        public virtual string Title { get; set; }     
+    }
+
+    [Serializable]
+    [DataContract]
     public class IoTEnsembleDashboardConfiguration
     {
         [DataMember]
@@ -84,6 +116,12 @@ namespace LCU.State.API.IoTEnsemble.State
     {
         [DataMember]
         public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
+
+        [DataMember]
+        public virtual int MaxDevicesCount { get; set; }
+
+        [DataMember]
+        public virtual string Page { get; set; }
 
         [DataMember]
         public virtual int PageSize { get; set; }

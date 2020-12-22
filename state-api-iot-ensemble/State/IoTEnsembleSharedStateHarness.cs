@@ -27,6 +27,7 @@ using LCU.Personas.Client.Security;
 using System.Net.Http;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
+using LCU.Personas.Client.Identity;
 
 namespace LCU.State.API.IoTEnsemble.State
 {
@@ -241,6 +242,37 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to establish the user's enterprise, please try again.");
         }
 
+        public virtual async Task<Status> HasLicenseAccess(IdentityManagerClient idMgr, string entLookup, string username)
+        {
+            if (State.ConnectedDevicesConfig == null)
+                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+
+            var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
+
+            State.HasAccess = hasAccess.Status;
+ 
+            if (State.HasAccess)
+            {
+                if (hasAccess.Model.Metadata.ContainsKey("LicenseType"))
+                    State.AccessLicenseType = hasAccess.Model.Metadata["LicenseType"].ToString();
+ 
+                if (hasAccess.Model.Metadata.ContainsKey("PlanGroup"))
+                    State.AccessPlanGroup = hasAccess.Model.Metadata["PlanGroup"].ToString();
+                
+                if (hasAccess.Model.Metadata.ContainsKey("Devices"))
+                    State.ConnectedDevicesConfig.MaxDevicesCount = hasAccess.Model.Metadata["Devices"].ToString().As<int>();
+            }
+            else{
+                State.AccessLicenseType = "iot";
+
+                State.AccessPlanGroup = "explore";
+
+                State.ConnectedDevicesConfig.MaxDevicesCount = 1;
+            }
+
+            return Status.Success;    
+        }
+
         public virtual async Task IssueDeviceSASToken(ApplicationArchitectClient appArch, string deviceName, int expiryInSeconds)
         {
             var deviceSasResp = await appArch.IssueDeviceSASToken(State.UserEnterpriseLookup, deviceName, expiryInSeconds: expiryInSeconds,
@@ -314,10 +346,12 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task Refresh(IDurableOrchestrationClient starter, StateDetails stateDetails, ExecuteActionRequest exActReq,
-            ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr,
+            ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
             SecurityManagerClient secMgr, string parentEntLookup, string username, string host)
         {
-            await EnsureUserEnterprise(entArch, entMgr, secMgr, parentEntLookup, username);
+            await EnsureUserEnterprise(entArch, entMgr, secMgr, parentEntLookup, username);           
+
+            await HasLicenseAccess(idMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
             await Task.WhenAll(
                 EnsureEmulatedDeviceInfo(secMgr),
