@@ -265,7 +265,7 @@ namespace LCU.State.API.IoTEnsemble.State
             else{
                 State.AccessLicenseType = "iot";
 
-                State.AccessPlanGroup = "explore";
+                State.AccessPlanGroup = "explorer";
 
                 State.ConnectedDevicesConfig.MaxDevicesCount = 1;
             }
