@@ -30,27 +30,38 @@ namespace LCU.State.API.IoTEnsemble.Shared
 {
     [Serializable]
     [DataContract]
-    public class UpdateTelemetrySyncRequest : BaseRequest
+    public class WarmQueryRequest : BaseRequest
     {
         [DataMember]
-        public virtual int RefreshRate { get; set; }
+        public virtual DateTime EndDate { get; set; }
+
+        [DataMember]
+        public virtual bool IncludeEmulated { get; set; }
+
+        [DataMember]
+        public virtual int Page { get; set; }
 
         [DataMember]
         public virtual int PageSize { get; set; }
+
+        [DataMember]
+        public virtual List<string> SelectedDeviceIDs { get; set; }
+
+        [DataMember]
+        public virtual DateTime StartDate { get; set; }
     }
 
-    public class UpdateTelemetrySync
+    public class WarmQuery
     {
         protected SecurityManagerClient secMgr;
 
-        public UpdateTelemetrySync(SecurityManagerClient secMgr)
+        public WarmQuery(SecurityManagerClient secMgr)
         {
             this.secMgr = secMgr;
         }
 
-        [FunctionName("UpdateTelemetrySync")]
-        public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
-            [DurableClient] IDurableOrchestrationClient starter,
+        [FunctionName("WarmQuery")]
+        public virtual async Task<HttpResponseMessage> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
@@ -58,35 +69,28 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
         {
-            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var queried = new IoTEnsembleTelemetryResponse()
+            {
+                Status = Status.Initialized
+            };
+
+            await stateBlob.WithStateHarness<IoTEnsembleSharedState, WarmQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
-                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
+                    log.LogInformation($"Running a WarmQuery: {dataReq}");
 
-                    if (harness.State.Telemetry == null)
-                        harness.State.Telemetry = new IoTEnsembleTelemetry();
+                    var stateDetails = StateUtils.LoadStateDetails(req);
 
-                    harness.State.Telemetry.Loading = true;
+                    queried = await harness.WarmQuery(docClient, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page, 
+                        dataReq.IncludeEmulated);
 
-                    return Status.Success;
+                    return queried.Status;
                 }, preventStatusException: true);
 
-            if (status)
-                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                    async (harness, dataReq, actReq) =>
-                    {
-                        log.LogInformation($"UpdateTelemetrySync");
-
-                        var stateDetails = StateUtils.LoadStateDetails(req);
-
-                        await harness.UpdateTelemetrySync(secMgr, docClient, dataReq.RefreshRate, dataReq.PageSize);
-
-                        harness.State.Telemetry.Loading = false;
-
-                        return Status.Success;
-                    });
-
-            return status;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(queried.ToJSON(), Encoding.UTF8, "application/json")
+            };
         }
     }
 }

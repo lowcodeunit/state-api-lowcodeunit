@@ -27,6 +27,7 @@ using LCU.Personas.Client.Security;
 using System.Net.Http;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
+using LCU.Personas.Client.Identity;
 
 namespace LCU.State.API.IoTEnsemble.State
 {
@@ -241,6 +242,37 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to establish the user's enterprise, please try again.");
         }
 
+        public virtual async Task<Status> HasLicenseAccess(IdentityManagerClient idMgr, string entLookup, string username)
+        {
+            if (State.ConnectedDevicesConfig == null)
+                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+
+            var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
+
+            State.HasAccess = hasAccess.Status;
+ 
+            if (State.HasAccess)
+            {
+                if (hasAccess.Model.Metadata.ContainsKey("LicenseType"))
+                    State.AccessLicenseType = hasAccess.Model.Metadata["LicenseType"].ToString();
+ 
+                if (hasAccess.Model.Metadata.ContainsKey("PlanGroup"))
+                    State.AccessPlanGroup = hasAccess.Model.Metadata["PlanGroup"].ToString();
+                
+                if (hasAccess.Model.Metadata.ContainsKey("Devices"))
+                    State.ConnectedDevicesConfig.MaxDevicesCount = hasAccess.Model.Metadata["Devices"].ToString().As<int>();
+            }
+            else{
+                State.AccessLicenseType = "iot";
+
+                State.AccessPlanGroup = "explore";
+
+                State.ConnectedDevicesConfig.MaxDevicesCount = 1;
+            }
+
+            return Status.Success;    
+        }
+
         public virtual async Task IssueDeviceSASToken(ApplicationArchitectClient appArch, string deviceName, int expiryInSeconds)
         {
             var deviceSasResp = await appArch.IssueDeviceSASToken(State.UserEnterpriseLookup, deviceName, expiryInSeconds: expiryInSeconds,
@@ -279,8 +311,12 @@ namespace LCU.State.API.IoTEnsemble.State
                 {
                     RefreshRate = 30,
                     PageSize = 20,
+                    Page = 1,
                     Payloads = new List<IoTEnsembleTelemetryPayload>()
                 };
+
+            if (State.Telemetry.Page < 1)
+                State.Telemetry.Page = 1;
 
             if (State.Telemetry.Enabled)
             {
@@ -289,7 +325,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 try
                 {
                     var payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup,
-                        State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Emulated.Enabled);
+                        State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Telemetry.Page, State.Emulated.Enabled);
 
                     if (!payloads.IsNullOrEmpty())
                         State.Telemetry.Payloads.AddRange(payloads);
@@ -314,10 +350,12 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task Refresh(IDurableOrchestrationClient starter, StateDetails stateDetails, ExecuteActionRequest exActReq,
-            ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr,
+            ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
             SecurityManagerClient secMgr, string parentEntLookup, string username, string host)
         {
-            await EnsureUserEnterprise(entArch, entMgr, secMgr, parentEntLookup, username);
+            await EnsureUserEnterprise(entArch, entMgr, secMgr, parentEntLookup, username);           
+
+            await HasLicenseAccess(idMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
             await Task.WhenAll(
                 EnsureEmulatedDeviceInfo(secMgr),
@@ -433,7 +471,31 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
+        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient client, List<string> selectedDeviceIds, 
+            int pageSize, int page, bool includeEmulated)
+        {
+            var response = new IoTEnsembleTelemetryResponse()
+            {
+                Payloads = new List<IoTEnsembleTelemetryPayload>(),
+                Status = Status.Initialized
+            };
 
+            try
+            {
+                response.Payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup, selectedDeviceIds, pageSize, 
+                    page, includeEmulated);
+
+                response.Status = Status.Success;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "There was an issue loading your device telemetry.");
+
+                response.Status = Status.GeneralError.Clone("There was an issue loading your device telemetry.");
+            }
+
+            return response;
+        }
         #endregion
 
         #region Helpers
@@ -444,8 +506,14 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         protected virtual async Task<List<IoTEnsembleTelemetryPayload>> queryTelemetryPayloads(DocumentClient client, string entLookup,
-            List<string> selectedDeviceIds, int pageSize, bool emulatedEnabled)
+            List<string> selectedDeviceIds, int pageSize, int page, bool emulatedEnabled)
         {
+            if (page < 1)
+                page = 1;
+
+            if (pageSize < 1)
+                pageSize = 1;
+
             Uri colUri = UriFactory.CreateDocumentCollectionUri(warmTelemetryDatabase, warmTelemetryContainer);
 
             IQueryable<IoTEnsembleTelemetryPayload> docsQueryBldr =
@@ -460,7 +528,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             docsQueryBldr = docsQueryBldr
                 .OrderByDescending(payload => payload._ts)
-                .Skip(0)
+                .Skip((pageSize * page) - pageSize)
                 .Take(pageSize);
 
             var docsQuery = docsQueryBldr.AsDocumentQuery();

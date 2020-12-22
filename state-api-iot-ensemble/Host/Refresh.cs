@@ -21,6 +21,7 @@ using LCU.Personas.Client.Enterprises;
 using LCU.State.API.IoTEnsemble.State;
 using LCU.Personas.Client.Security;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using LCU.Personas.Client.Identity;
 
 namespace LCU.State.API.IoTEnsemble.Host
 {
@@ -37,9 +38,11 @@ namespace LCU.State.API.IoTEnsemble.Host
 
         protected EnterpriseManagerClient entMgr;
 
+        protected IdentityManagerClient idMgr;
+
         protected SecurityManagerClient secMgr;
 
-        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, 
+        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
             SecurityManagerClient secMgr)
         {
             this.appArch = appArch;
@@ -47,8 +50,10 @@ namespace LCU.State.API.IoTEnsemble.Host
             this.entArch = entArch;
             
             this.entMgr = entMgr;
+
+            this.idMgr = idMgr;
             
-            this.secMgr = secMgr;
+            this.secMgr = secMgr;           
         }
 
         [FunctionName("Refresh")]
@@ -64,7 +69,7 @@ namespace LCU.State.API.IoTEnsemble.Host
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.Refresh(starter, stateDetails, actReq, appArch, entArch, entMgr, secMgr, 
+                await harness.Refresh(starter, stateDetails, actReq, appArch, entArch, entMgr, idMgr, secMgr, 
                     stateDetails.EnterpriseLookup, stateDetails.Username, stateDetails.Host);
 
                 return Status.Success;
