@@ -279,8 +279,12 @@ namespace LCU.State.API.IoTEnsemble.State
                 {
                     RefreshRate = 30,
                     PageSize = 20,
+                    Page = 1,
                     Payloads = new List<IoTEnsembleTelemetryPayload>()
                 };
+
+            if (State.Telemetry.Page < 1)
+                State.Telemetry.Page = 1;
 
             if (State.Telemetry.Enabled)
             {
@@ -289,7 +293,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 try
                 {
                     var payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup,
-                        State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Emulated.Enabled);
+                        State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Telemetry.Page, State.Emulated.Enabled);
 
                     if (!payloads.IsNullOrEmpty())
                         State.Telemetry.Payloads.AddRange(payloads);
@@ -433,7 +437,31 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
+        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient client, List<string> selectedDeviceIds, 
+            int pageSize, int page, bool includeEmulated)
+        {
+            var response = new IoTEnsembleTelemetryResponse()
+            {
+                Payloads = new List<IoTEnsembleTelemetryPayload>(),
+                Status = Status.Initialized
+            };
 
+            try
+            {
+                response.Payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup, selectedDeviceIds, pageSize, 
+                    page, includeEmulated);
+
+                response.Status = Status.Success;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "There was an issue loading your device telemetry.");
+
+                response.Status = Status.GeneralError.Clone("There was an issue loading your device telemetry.");
+            }
+
+            return response;
+        }
         #endregion
 
         #region Helpers
@@ -444,8 +472,14 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         protected virtual async Task<List<IoTEnsembleTelemetryPayload>> queryTelemetryPayloads(DocumentClient client, string entLookup,
-            List<string> selectedDeviceIds, int pageSize, bool emulatedEnabled)
+            List<string> selectedDeviceIds, int pageSize, int page, bool emulatedEnabled)
         {
+            if (page < 1)
+                page = 1;
+
+            if (pageSize < 1)
+                pageSize = 1;
+
             Uri colUri = UriFactory.CreateDocumentCollectionUri(warmTelemetryDatabase, warmTelemetryContainer);
 
             IQueryable<IoTEnsembleTelemetryPayload> docsQueryBldr =
@@ -460,7 +494,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             docsQueryBldr = docsQueryBldr
                 .OrderByDescending(payload => payload._ts)
-                .Skip(0)
+                .Skip((pageSize * page) - pageSize)
                 .Take(pageSize);
 
             var docsQuery = docsQueryBldr.AsDocumentQuery();

@@ -17,6 +17,7 @@ using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using LCU.Personas.Applications;
+using Fathym.API;
 
 namespace LCU.State.API.IoTEnsemble.State
 {
@@ -128,6 +129,9 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual List<IoTEnsembleTelemetryPayload> Payloads { get; set; }
 
         [DataMember]
+        public virtual int Page { get; set; }
+
+        [DataMember]
         public virtual int PageSize { get; set; }
 
         [DataMember]
@@ -135,6 +139,14 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual DateTime LastSyncedAt {get; set;}
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleTelemetryResponse : BaseResponse
+    {
+        [DataMember]
+        public virtual List<IoTEnsembleTelemetryPayload> Payloads { get; set; }
     }
 
     [Serializable]
