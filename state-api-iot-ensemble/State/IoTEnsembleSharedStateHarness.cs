@@ -68,21 +68,31 @@ namespace LCU.State.API.IoTEnsemble.State
             if (telemetryRoot.IsNullOrEmpty())
                 telemetryRoot = String.Empty;
 
-            warmTelemetryContainer = Environment.GetEnvironmentVariable("LCU-WARM-TELEMETRY-CONTAINER");
+            warmTelemetryContainer = Environment.GetEnvironmentVariable("LCU-WARM-STORAGE-TELEMETRY-CONTAINER");
 
-            warmTelemetryDatabase = Environment.GetEnvironmentVariable("LCU-WARM-TELEMETRY-DATABASE");
+            warmTelemetryDatabase = Environment.GetEnvironmentVariable("LCU-WARM-STORAGE-DATABASE");
         }
         #endregion
 
         #region API Methods
         public virtual async Task<bool> EnrollDevice(ApplicationArchitectClient appArch, IoTEnsembleDeviceEnrollment device)
         {
-            var enrollResp = await appArch.EnrollDevice(new EnrollDeviceRequest()
-            {
-                DeviceID = $"{State.UserEnterpriseLookup}-{device.DeviceName}"
-            }, State.UserEnterpriseLookup, DeviceAttestationTypes.SymmetricKey, DeviceEnrollmentTypes.Individual, envLookup: null);
+            var enrollResp = new EnrollDeviceResponse();
 
-            var status = enrollResp.Status;
+            var status = new Status();
+
+            if (State.ConnectedDevicesConfig.Devices.Count() < State.ConnectedDevicesConfig.MaxDevicesCount)
+            {
+                enrollResp = await appArch.EnrollDevice(new EnrollDeviceRequest()
+                {
+                    DeviceID = $"{State.UserEnterpriseLookup}-{device.DeviceName}"
+                }, State.UserEnterpriseLookup, DeviceAttestationTypes.SymmetricKey, DeviceEnrollmentTypes.Individual, envLookup: null);
+
+                status = enrollResp.Status;
+            }
+
+            else
+                status = Status.Conflict.Clone("Max Device Count Reached");
 
             await LoadDevices(appArch);
 
