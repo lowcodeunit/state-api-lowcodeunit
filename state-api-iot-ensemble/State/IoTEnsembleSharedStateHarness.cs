@@ -84,6 +84,18 @@ namespace LCU.State.API.IoTEnsemble.State
             return false;
         }
 
+        public virtual async Task<Status> EnsureAPISubscription(EnterpriseArchitectClient entArch, string entLookup, string username)
+        {
+            var response = await entArch.EnsureAPISubscription(new EnsureAPISubscriptionRequset()
+            {
+                SubscriptionType = $"{State.AccessLicenseType}-{State.AccessPlanGroup}".ToLower()
+            }, entLookup, username);
+
+            //  TODO:  Handle API error
+
+            return await LoadAPIKeys(entArch, entLookup, username);
+        }
+
         public virtual async Task EnsureDevicesDashboard(SecurityManagerClient secMgr)
         {
             if (State.Dashboard == null)
@@ -142,6 +154,28 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
+        public virtual async Task EnsureEmulatedDeviceInfo(SecurityManagerClient secMgr)
+        {
+            if (State.Emulated == null)
+                State.Emulated = new EmulatedDeviceInfo();
+
+            if (!State.UserEnterpriseLookup.IsNullOrEmpty())
+            {
+                var tpd = await secMgr.RetrieveEnterpriseThirdPartyData(State.UserEnterpriseLookup, EMULATED_DEVICE_ENABLED);
+
+                if (tpd.Status && tpd.Model.ContainsKey(EMULATED_DEVICE_ENABLED) && !tpd.Model[EMULATED_DEVICE_ENABLED].IsNullOrEmpty())
+                    State.Emulated.Enabled = tpd.Model[EMULATED_DEVICE_ENABLED].As<bool>();
+                else
+                {
+                    State.Emulated.Enabled = true;
+
+                    await ToggleEmulatedEnabled(secMgr);
+                }
+            }
+            else
+                throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
+        }
+
         public virtual async Task EnsureTelemetry(IDurableOrchestrationClient starter, StateDetails stateDetails,
             ExecuteActionRequest exActReq, SecurityManagerClient secMgr)
         {
@@ -162,28 +196,6 @@ namespace LCU.State.API.IoTEnsemble.State
                     await setTelemetryEnabled(secMgr, false);
 
                 await EnsureTelemetrySyncState(starter, stateDetails, exActReq);
-            }
-            else
-                throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
-        }
-
-        public virtual async Task EnsureEmulatedDeviceInfo(SecurityManagerClient secMgr)
-        {
-            if (State.Emulated == null)
-                State.Emulated = new EmulatedDeviceInfo();
-
-            if (!State.UserEnterpriseLookup.IsNullOrEmpty())
-            {
-                var tpd = await secMgr.RetrieveEnterpriseThirdPartyData(State.UserEnterpriseLookup, EMULATED_DEVICE_ENABLED);
-
-                if (tpd.Status && tpd.Model.ContainsKey(EMULATED_DEVICE_ENABLED) && !tpd.Model[EMULATED_DEVICE_ENABLED].IsNullOrEmpty())
-                    State.Emulated.Enabled = tpd.Model[EMULATED_DEVICE_ENABLED].As<bool>();
-                else
-                {
-                    State.Emulated.Enabled = true;
-
-                    await ToggleEmulatedEnabled(secMgr);
-                }
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
@@ -250,19 +262,20 @@ namespace LCU.State.API.IoTEnsemble.State
             var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
 
             State.HasAccess = hasAccess.Status;
- 
+
             if (State.HasAccess)
             {
                 if (hasAccess.Model.Metadata.ContainsKey("LicenseType"))
                     State.AccessLicenseType = hasAccess.Model.Metadata["LicenseType"].ToString();
- 
+
                 if (hasAccess.Model.Metadata.ContainsKey("PlanGroup"))
                     State.AccessPlanGroup = hasAccess.Model.Metadata["PlanGroup"].ToString();
-                
+
                 if (hasAccess.Model.Metadata.ContainsKey("Devices"))
                     State.ConnectedDevicesConfig.MaxDevicesCount = hasAccess.Model.Metadata["Devices"].ToString().As<int>();
             }
-            else{
+            else
+            {
                 State.AccessLicenseType = "iot";
 
                 State.AccessPlanGroup = "explorer";
@@ -270,7 +283,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 State.ConnectedDevicesConfig.MaxDevicesCount = 1;
             }
 
-            return Status.Success;    
+            return Status.Success;
         }
 
         public virtual async Task IssueDeviceSASToken(ApplicationArchitectClient appArch, string deviceName, int expiryInSeconds)
@@ -280,6 +293,44 @@ namespace LCU.State.API.IoTEnsemble.State
 
             if (deviceSasResp.Status)
                 State.LatestDeviceSASTokens[deviceName] = deviceSasResp.Model;
+        }
+
+        public virtual async Task<Status> LoadAPIKeys(EnterpriseArchitectClient entArch, string entLookup, string username)
+        {
+            if (State.Storage == null)
+                State.Storage = new IoTEnsembleStorageConfiguration();
+
+            State.Storage.APIKeys = new List<IoTEnsembleAPIKeyData>();
+
+            var response = await entArch.LoadAPIKeys(entLookup, username);
+
+            //  TODO:  Handle API error
+
+            State.Storage.APIKeys = response.Model?.Metadata.Select(m => new IoTEnsembleAPIKeyData()
+            {
+                Key = m.Value.ToString(),
+                KeyName = m.Key
+            }).ToList();
+
+            return Status.Success;
+        }
+
+        public virtual async Task<Status> LoadAPIOptions()
+        {
+            if (State.Storage == null)
+                State.Storage = new IoTEnsembleStorageConfiguration();
+
+            State.Storage.APIOptions = new List<IoTEnsembleAPIOption>();
+
+            State.Storage.APIOptions.Add(new IoTEnsembleAPIOption()
+            {
+                Name=  "Warm Query",
+                Description = "The warm query is used to access the telemetry records in your warm storage.",
+                Method = "GET",
+                Path = "https://fathym-prd.portal.azure-api.net/docs/services/iot-ensemble-state-api/operations/warmquery",
+            });
+
+            return Status.Success;
         }
 
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
@@ -351,18 +402,20 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task Refresh(IDurableOrchestrationClient starter, StateDetails stateDetails, ExecuteActionRequest exActReq,
             ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
-            SecurityManagerClient secMgr, string parentEntLookup, string username, string host)
+            SecurityManagerClient secMgr)
         {
-            await EnsureUserEnterprise(entArch, entMgr, secMgr, parentEntLookup, username);           
+            await EnsureUserEnterprise(entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
             await HasLicenseAccess(idMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
             await Task.WhenAll(
-                EnsureEmulatedDeviceInfo(secMgr),
+                EnsureAPISubscription(entArch, stateDetails.EnterpriseLookup, stateDetails.Username),
                 EnsureDevicesDashboard(secMgr),
                 EnsureDrawersConfig(secMgr),
+                EnsureEmulatedDeviceInfo(secMgr),
                 EnsureTelemetry(starter, stateDetails, exActReq, secMgr),
-                LoadDevices(appArch)
+                LoadDevices(appArch),
+                LoadAPIOptions()
             );
         }
 
@@ -471,7 +524,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient client, List<string> selectedDeviceIds, 
+        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient client, List<string> selectedDeviceIds,
             int pageSize, int page, bool includeEmulated)
         {
             var response = new IoTEnsembleTelemetryResponse()
@@ -482,7 +535,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             try
             {
-                response.Payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup, selectedDeviceIds, pageSize, 
+                response.Payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup, selectedDeviceIds, pageSize,
                     page, includeEmulated);
 
                 response.Status = Status.Success;

@@ -242,6 +242,37 @@ namespace LCU.State.API.IoTEnsemble.State
     public class IoTEnsembleStorageConfiguration
     {
         [DataMember]
-        public virtual Dictionary<string, string> APIKeys { get; set; }
+        public virtual List<IoTEnsembleAPIKeyData> APIKeys { get; set; }
+        
+        [DataMember]
+        public virtual List<IoTEnsembleAPIOption> APIOptions { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleAPIKeyData
+    {
+        [DataMember]
+        public virtual string Key { get; set; }
+        
+        [DataMember]
+        public virtual string KeyName { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleAPIOption
+    {
+        [DataMember]
+        public virtual string Description { get; set; }
+        
+        [DataMember]
+        public virtual string Method { get; set; }
+        
+        [DataMember]
+        public virtual string Name { get; set; }
+        
+        [DataMember]
+        public virtual string Path { get; set; }
     }
 }
