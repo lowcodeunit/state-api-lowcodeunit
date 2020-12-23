@@ -26,7 +26,7 @@ using System.Text;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.Documents.Client;
 
-namespace LCU.State.API.IoTEnsemble.Shared
+namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 {
     [Serializable]
     [DataContract]
@@ -65,29 +65,31 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
-                databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
-                collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
-                ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
+                databaseName: "%LCU-WARM-STORAGE-DATABASE%",
+                collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
+                ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient telemClient)
         {
             var queried = new IoTEnsembleTelemetryResponse()
             {
-                Status = Status.Initialized
+                Status = Status.GeneralError
             };
 
-            await stateBlob.WithStateHarness<IoTEnsembleSharedState, WarmQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, WarmQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
                     log.LogInformation($"Running a WarmQuery: {dataReq}");
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
 
-                    queried = await harness.WarmQuery(docClient, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page, 
-                        dataReq.IncludeEmulated);
+                    queried = await harness.WarmQuery(telemClient, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page, 
+                        dataReq.IncludeEmulated, dataReq.StartDate, dataReq.EndDate);
 
                     return queried.Status;
                 }, preventStatusException: true);
 
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            var statusCode = status ? HttpStatusCode.OK : HttpStatusCode.InternalServerError;
+
+            return new HttpResponseMessage(statusCode)
             {
                 Content = new StringContent(queried.ToJSON(), Encoding.UTF8, "application/json")
             };

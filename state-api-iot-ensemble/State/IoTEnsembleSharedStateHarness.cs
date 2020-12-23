@@ -28,6 +28,7 @@ using System.Net.Http;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using LCU.Personas.Client.Identity;
+using Microsoft.Azure.Storage.Blob;
 
 namespace LCU.State.API.IoTEnsemble.State
 {
@@ -324,7 +325,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             State.Storage.APIOptions.Add(new IoTEnsembleAPIOption()
             {
-                Name=  "Warm Query",
+                Name = "Warm Query",
                 Description = "The warm query is used to access the telemetry records in your warm storage.",
                 Method = "GET",
                 Path = "https://fathym-prd.portal.azure-api.net/docs/services/iot-ensemble-state-api/operations/warmquery",
@@ -524,8 +525,18 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient client, List<string> selectedDeviceIds,
-            int pageSize, int page, bool includeEmulated)
+        #region Storage Access
+        public virtual async Task<byte[]> ColdQuery(CloudBlobDirectory coldBlobs, List<string> selectedDeviceIds, int pageSize, int page, 
+            bool includeEmulated, DateTime startDate, DateTime endDate, ColdQueryResultTypes? resultType, bool flatten, 
+            ColdQueryDataTypes? dataType)
+        {
+            var response = new byte[] { };
+
+            return response;
+        }
+
+        public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient telemClient, List<string> selectedDeviceIds,
+            int pageSize, int page, bool includeEmulated, DateTime startDate, DateTime endDate)
         {
             var response = new IoTEnsembleTelemetryResponse()
             {
@@ -535,7 +546,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             try
             {
-                response.Payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup, selectedDeviceIds, pageSize,
+                response.Payloads = await queryTelemetryPayloads(telemClient, State.UserEnterpriseLookup, selectedDeviceIds, pageSize,
                     page, includeEmulated);
 
                 response.Status = Status.Success;
@@ -544,11 +555,13 @@ namespace LCU.State.API.IoTEnsemble.State
             {
                 log.LogError(ex, "There was an issue loading your device telemetry.");
 
-                response.Status = Status.GeneralError.Clone("There was an issue loading your device telemetry.");
+                response.Status = Status.GeneralError.Clone("There was an issue loading your device telemetry.",
+                    new { Exception = ex.ToString() });
             }
 
             return response;
         }
+        #endregion
         #endregion
 
         #region Helpers
@@ -605,5 +618,33 @@ namespace LCU.State.API.IoTEnsemble.State
                 State.Telemetry.Enabled = enabled;
         }
         #endregion
+    }
+
+    [Serializable]
+    [DataContract]
+    public enum ColdQueryResultTypes
+    {
+        [EnumMember]
+        CSV,
+
+        [EnumMember]
+        JSON,
+
+        [EnumMember]
+        JSONLines
+    }
+
+    [Serializable]
+    [DataContract]
+    public enum ColdQueryDataTypes
+    {
+        [EnumMember]
+        Telemetry,
+
+        [EnumMember]
+        Observations,
+
+        [EnumMember]
+        SensorMetadata
     }
 }
