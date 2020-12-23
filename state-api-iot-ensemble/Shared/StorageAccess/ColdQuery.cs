@@ -26,6 +26,7 @@ using System.Text;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json.Converters;
+using System.Net.Http.Headers;
 
 namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 {
@@ -37,7 +38,7 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
         public virtual ColdQueryDataTypes? DataType { get; set; }
 
         [DataMember]
-        public virtual DateTime EndDate { get; set; }
+        public virtual DateTime? EndDate { get; set; }
 
         [DataMember]
         public virtual bool Flatten { get; set; }
@@ -58,7 +59,10 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
         public virtual List<string> SelectedDeviceIDs { get; set; }
 
         [DataMember]
-        public virtual DateTime StartDate { get; set; }
+        public virtual DateTime? StartDate { get; set; }
+
+        [DataMember]
+        public virtual bool Zip { get; set; }
     }
 
     public class ColdQuery
@@ -74,9 +78,13 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
         public virtual async Task<HttpResponseMessage> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
-            [Blob("cold-storage", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory coldBlobs)
+            [Blob("cold-storage", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory coldBlob)
         {
             var queried = new byte[] { };
+
+            var fileName = String.Empty;
+
+            var contentType = String.Empty;
 
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, ColdQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
@@ -85,8 +93,20 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
 
-                    queried = await harness.ColdQuery(coldBlobs, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page,
-                        dataReq.IncludeEmulated, dataReq.StartDate, dataReq.EndDate, dataReq.ResultType, dataReq.Flatten, dataReq.DataType);
+                    var fileExtension = getFileExtension(dataReq.ResultType);
+
+                    fileName = buildFileName(dataReq.DataType.Value, dataReq.StartDate.Value, dataReq.EndDate.Value, fileExtension);
+
+                    queried = await harness.ColdQuery(coldBlob, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page,
+                        dataReq.IncludeEmulated, dataReq.StartDate, dataReq.EndDate, dataReq.ResultType, dataReq.Flatten, dataReq.DataType,
+                        dataReq.Zip, fileName, fileExtension);
+
+                    if (dataReq.ResultType == ColdQueryResultTypes.CSV)
+                        contentType = "text/csv";
+                    else if (dataReq.ResultType == ColdQueryResultTypes.JSON)
+                        contentType = "application/json";
+                    else if (dataReq.ResultType == ColdQueryResultTypes.JSONLines)
+                        contentType = "application/jsonl";
 
                     return !queried.IsNullOrEmpty();
                 }, preventStatusException: true);
@@ -94,7 +114,15 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
             HttpContent content;
 
             if (status)
+            {
                 content = new ByteArrayContent(queried);
+
+                content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
+
+                content.Headers.ContentDisposition.FileName = fileName;
+
+                content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+            }
             else
             {
                 var resp = new BaseResponse() { Status = status };
@@ -108,6 +136,33 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
             {
                 Content = content
             };
+        }
+
+        private static string buildFileName(ColdQueryDataTypes dataType, DateTime startDate, DateTime endDate, string fileExtension)
+        {
+            var dtTypeStr = dataType.ToString().ToLower();
+
+            var startStr = startDate.ToString("YYYYMMDDHHmmss");
+
+            var endStr = endDate.ToString("YYYYMMDDHHmmss");
+
+            var fileName = $"{dtTypeStr}-{startStr}-{endStr}.{fileExtension}";
+
+            return fileName;
+        }
+
+        private static string getFileExtension(ColdQueryResultTypes? resultType)
+        {
+            var fileExtension = String.Empty;
+
+            if (resultType == null || resultType == ColdQueryResultTypes.JSON)
+                fileExtension = "json";
+            else if (resultType == ColdQueryResultTypes.JSONLines)
+                fileExtension = "jsonl";
+            else if (resultType == ColdQueryResultTypes.CSV)
+                fileExtension = "csv";
+
+            return fileExtension;
         }
     }
 }
