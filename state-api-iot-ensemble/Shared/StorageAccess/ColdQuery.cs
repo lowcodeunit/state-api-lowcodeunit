@@ -78,7 +78,7 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
         public virtual async Task<HttpResponseMessage> Run([HttpTrigger] HttpRequest req, ILogger log,
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
-            [Blob("cold-storage", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory coldBlob)
+            [Blob("cold-storage/data", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory coldBlob)
         {
             var queried = new byte[] { };
 
@@ -92,6 +92,20 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
                     log.LogInformation($"Running a ColdQuery: {dataReq}");
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
+
+                    var now = DateTime.UtcNow;
+
+                    if (dataReq.StartDate == null)
+                        dataReq.StartDate = now.AddDays(-30);
+
+                    if (dataReq.EndDate == null)
+                        dataReq.EndDate = now;
+
+                    if (dataReq.ResultType == null)
+                        dataReq.ResultType = ColdQueryResultTypes.JSON;
+
+                    if (dataReq.DataType == null)
+                        dataReq.DataType = ColdQueryDataTypes.Telemetry;
 
                     var fileExtension = getFileExtension(dataReq.ResultType);
 

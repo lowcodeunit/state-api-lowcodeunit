@@ -546,14 +546,6 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             var response = new byte[] { };
 
-            var now = DateTime.UtcNow;
-
-            if (startDate == null)
-                startDate = now.AddDays(-30);
-
-            if (endDate == null)
-                endDate = now;
-
             if (coldBlob != null)
             {
                 var downloadedData = await downloadData(coldBlob, dataType, State.UserEnterpriseLookup, startDate, endDate);
@@ -565,7 +557,7 @@ namespace LCU.State.API.IoTEnsemble.State
                     downloadedData = flattenDownloadedData(downloadedData);
                 }
 
-                await processToResultType(downloadedData, resultType);
+                response = await processToResultType(downloadedData, resultType);
 
                 if (zip)
                 {
@@ -581,7 +573,7 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task<IoTEnsembleTelemetryResponse> WarmQuery(DocumentClient telemClient, List<string> selectedDeviceIds,
-            int pageSize, int page, bool includeEmulated, DateTime startDate, DateTime endDate)
+            int? pageSize, int? page, bool includeEmulated, DateTime? startDate, DateTime? endDate)
         {
             var response = new IoTEnsembleTelemetryResponse()
             {
@@ -589,10 +581,16 @@ namespace LCU.State.API.IoTEnsemble.State
                 Status = Status.Initialized
             };
 
+            if (!page.HasValue || page.Value < 1)
+                page = 1;
+
+            if (!pageSize.HasValue || pageSize.Value < 1)
+                pageSize = 1;
+
             try
             {
-                response.Payloads = await queryTelemetryPayloads(telemClient, State.UserEnterpriseLookup, selectedDeviceIds, pageSize,
-                    page, includeEmulated);
+                response.Payloads = await queryTelemetryPayloads(telemClient, State.UserEnterpriseLookup, selectedDeviceIds, pageSize.Value,
+                    page.Value, includeEmulated);
 
                 response.Status = Status.Success;
             }

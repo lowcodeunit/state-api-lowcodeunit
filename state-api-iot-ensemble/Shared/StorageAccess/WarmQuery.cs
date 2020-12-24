@@ -33,22 +33,22 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
     public class WarmQueryRequest : BaseRequest
     {
         [DataMember]
-        public virtual DateTime EndDate { get; set; }
+        public virtual DateTime? EndDate { get; set; }
 
         [DataMember]
         public virtual bool IncludeEmulated { get; set; }
 
         [DataMember]
-        public virtual int Page { get; set; }
+        public virtual int? Page { get; set; }
 
         [DataMember]
-        public virtual int PageSize { get; set; }
+        public virtual int? PageSize { get; set; }
 
         [DataMember]
         public virtual List<string> SelectedDeviceIDs { get; set; }
 
         [DataMember]
-        public virtual DateTime StartDate { get; set; }
+        public virtual DateTime? StartDate { get; set; }
     }
 
     public class WarmQuery
