@@ -311,7 +311,12 @@ namespace LCU.State.API.IoTEnsemble.State
                 envLookup: null);
 
             if (deviceSasResp.Status)
+            {
+                if (State.Devices.SASTokens == null)
+                    State.Devices.SASTokens = new Dictionary<string, string>();
+
                 State.Devices.SASTokens[deviceName] = deviceSasResp.Model;
+            }
         }
 
         public virtual async Task<Status> LoadAPIKeys(EnterpriseArchitectClient entArch, string entLookup, string username)
@@ -377,7 +382,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
 
-            State.Devices.SASTokens = new Dictionary<string, string>();
+            State.Devices.SASTokens = null;
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)

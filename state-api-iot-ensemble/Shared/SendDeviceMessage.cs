@@ -72,18 +72,18 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
             if (status)
                 status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, SendDeviceMessageRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                async (harness, dataReq, actReq) =>
-            {
-                log.LogInformation($"SendDeviceMessage");
+                    async (harness, dataReq, actReq) =>
+                    {
+                        log.LogInformation($"SendDeviceMessage");
 
-                var stateDetails = StateUtils.LoadStateDetails(req);
+                        var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.SendDeviceMessage(appArch, secMgr, docClient, dataReq.DeviceName, dataReq.Payload);
+                        await harness.SendDeviceMessage(appArch, secMgr, docClient, dataReq.DeviceName, dataReq.Payload);
 
-                harness.State.Telemetry.Loading = false;
+                        harness.State.Telemetry.Loading = false;
 
-                return Status.Success;
-            });
+                        return Status.Success;
+                    });
 
             return status;
         }

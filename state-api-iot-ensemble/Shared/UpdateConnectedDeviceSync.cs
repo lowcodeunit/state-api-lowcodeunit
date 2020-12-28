@@ -50,7 +50,21 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient docClient)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateConnectedDevicesSyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                async (harness, dataReq, actReq) =>
+                {
+                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
+
+                    if (harness.State.Devices == null)
+                        harness.State.Devices = new IoTEnsembleConnectedDevicesConfig();
+
+                    harness.State.Devices.Loading = true;
+
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateConnectedDevicesSyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
             {
                 log.LogInformation($"UpdateConnectedDevicesSync");
@@ -59,8 +73,12 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 await harness.UpdateConnectedDevicesSync(dataReq.PageSize);
 
+                harness.State.Devices.Loading = false;
+
                 return Status.Success;
             });
+
+            return status;
         }
     }
 }
