@@ -341,6 +341,14 @@ namespace LCU.State.API.IoTEnsemble.State
 
             State.Storage.APIOptions.Add(new IoTEnsembleAPIOption()
             {
+                Name = "Cold Query",
+                Description = "The cold query is used to access the records in your cold storage.",
+                Method = "GET",
+                Path = "https://fathym-prd.portal.azure-api.net/docs/services/iot-ensemble-state-api/operations/coldquery",
+            });
+
+            State.Storage.APIOptions.Add(new IoTEnsembleAPIOption()
+            {
                 Name = "Warm Query",
                 Description = "The warm query is used to access the telemetry records in your warm storage.",
                 Method = "GET",
