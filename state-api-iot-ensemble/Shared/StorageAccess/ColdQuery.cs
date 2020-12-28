@@ -27,6 +27,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json.Converters;
 using System.Net.Http.Headers;
+using LCU.Presentation.State.ReqRes;
 
 namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 {
@@ -34,8 +35,9 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
     [DataContract]
     public class ColdQueryRequest : BaseRequest
     {
+        [DataMember]
         [JsonConverter(typeof(StringEnumConverter))]
-        public virtual ColdQueryDataTypes? DataType { get; set; }
+        public virtual ColdQueryDataTypes DataType { get; set; }
 
         [DataMember]
         public virtual DateTime? EndDate { get; set; }
@@ -52,8 +54,9 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
         [DataMember]
         public virtual int PageSize { get; set; }
 
+        [DataMember]
         [JsonConverter(typeof(StringEnumConverter))]
-        public virtual ColdQueryResultTypes? ResultType { get; set; }
+        public virtual ColdQueryResultTypes ResultType { get; set; }
 
         [DataMember]
         public virtual List<string> SelectedDeviceIDs { get; set; }
@@ -80,16 +83,12 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [Blob("cold-storage/data", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory coldBlob)
         {
-            var queried = new byte[] { };
-
-            var fileName = String.Empty;
-
-            var contentType = String.Empty;
+            var queried = new HttpResponseMessage(); ;
 
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, ColdQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
-                    log.LogInformation($"Running a ColdQuery: {dataReq}");
+                    log.LogInformation($"Running a ColdQuery: {dataReq.ToJSON()}");
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
 
@@ -101,82 +100,14 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
                     if (dataReq.EndDate == null)
                         dataReq.EndDate = now;
 
-                    if (dataReq.ResultType == null)
-                        dataReq.ResultType = ColdQueryResultTypes.JSON;
-
-                    if (dataReq.DataType == null)
-                        dataReq.DataType = ColdQueryDataTypes.Telemetry;
-
-                    var fileExtension = getFileExtension(dataReq.ResultType);
-
-                    fileName = buildFileName(dataReq.DataType.Value, dataReq.StartDate.Value, dataReq.EndDate.Value, fileExtension);
-
                     queried = await harness.ColdQuery(coldBlob, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page,
                         dataReq.IncludeEmulated, dataReq.StartDate, dataReq.EndDate, dataReq.ResultType, dataReq.Flatten, dataReq.DataType,
-                        dataReq.Zip, fileName, fileExtension);
+                        dataReq.Zip);
 
-                    if (dataReq.ResultType == ColdQueryResultTypes.CSV)
-                        contentType = "text/csv";
-                    else if (dataReq.ResultType == ColdQueryResultTypes.JSON)
-                        contentType = "application/json";
-                    else if (dataReq.ResultType == ColdQueryResultTypes.JSONLines)
-                        contentType = "application/jsonl";
-
-                    return !queried.IsNullOrEmpty();
+                    return Status.Success;
                 }, preventStatusException: true);
 
-            HttpContent content;
-
-            if (status)
-            {
-                content = new ByteArrayContent(queried);
-
-                content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment");
-
-                content.Headers.ContentDisposition.FileName = fileName;
-
-                content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-            }
-            else
-            {
-                var resp = new BaseResponse() { Status = status };
-
-                content = new StringContent(resp.ToJSON(), Encoding.UTF8, "application/json");
-            }
-
-            var statusCode = status ? HttpStatusCode.OK : HttpStatusCode.InternalServerError;
-
-            return new HttpResponseMessage(statusCode)
-            {
-                Content = content
-            };
-        }
-
-        private static string buildFileName(ColdQueryDataTypes dataType, DateTime startDate, DateTime endDate, string fileExtension)
-        {
-            var dtTypeStr = dataType.ToString().ToLower();
-
-            var startStr = startDate.ToString("YYYYMMDDHHmmss");
-
-            var endStr = endDate.ToString("YYYYMMDDHHmmss");
-
-            var fileName = $"{dtTypeStr}-{startStr}-{endStr}.{fileExtension}";
-
-            return fileName;
-        }
-
-        private static string getFileExtension(ColdQueryResultTypes? resultType)
-        {
-            var fileExtension = String.Empty;
-
-            if (resultType == null || resultType == ColdQueryResultTypes.JSON)
-                fileExtension = "json";
-            else if (resultType == ColdQueryResultTypes.JSONLines)
-                fileExtension = "jsonl";
-            else if (resultType == ColdQueryResultTypes.CSV)
-                fileExtension = "csv";
-
-            return fileExtension;
+            return queried;
         }
     }
 }

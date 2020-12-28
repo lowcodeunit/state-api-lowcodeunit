@@ -74,6 +74,8 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
                 Status = Status.GeneralError
             };
 
+            var body = await req.LoadBody<MetadataModel>();
+
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, WarmQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
