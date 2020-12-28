@@ -83,7 +83,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
             var status = new Status();
 
-            if (State.ConnectedDevicesConfig.Devices.Count() < State.ConnectedDevicesConfig.MaxDevicesCount)
+            if (State.Devices.Devices.Count() < State.Devices.MaxDevicesCount)
             {
                 enrollResp = await appArch.EnrollDevice(new EnrollDeviceRequest()
                 {
@@ -200,7 +200,9 @@ namespace LCU.State.API.IoTEnsemble.State
                 State.Telemetry = new IoTEnsembleTelemetry()
                 {
                     RefreshRate = 30,
-                    PageSize = 20
+                    PageSize = 10,
+                    Page = 1,
+                    Payloads = new List<IoTEnsembleTelemetryPayload>()
                 };
 
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
@@ -273,8 +275,8 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task<Status> HasLicenseAccess(IdentityManagerClient idMgr, string entLookup, string username)
         {
-            if (State.ConnectedDevicesConfig == null)
-                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+            if (State.Devices == null)
+                State.Devices = new IoTEnsembleConnectedDevicesConfig();
 
             var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
 
@@ -289,7 +291,7 @@ namespace LCU.State.API.IoTEnsemble.State
                     State.AccessPlanGroup = hasAccess.Model.Metadata["PlanGroup"].ToString();
 
                 if (hasAccess.Model.Metadata.ContainsKey("Devices"))
-                    State.ConnectedDevicesConfig.MaxDevicesCount = hasAccess.Model.Metadata["Devices"].ToString().As<int>();
+                    State.Devices.MaxDevicesCount = hasAccess.Model.Metadata["Devices"].ToString().As<int>();
             }
             else
             {
@@ -297,7 +299,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 State.AccessPlanGroup = "explorer";
 
-                State.ConnectedDevicesConfig.MaxDevicesCount = 1;
+                State.Devices.MaxDevicesCount = 1;
             }
 
             return Status.Success;
@@ -309,7 +311,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 envLookup: null);
 
             if (deviceSasResp.Status)
-                State.LatestDeviceSASTokens[deviceName] = deviceSasResp.Model;
+                State.Devices.SASTokens[deviceName] = deviceSasResp.Model;
         }
 
         public virtual async Task<Status> LoadAPIKeys(EnterpriseArchitectClient entArch, string entLookup, string username)
@@ -360,12 +362,12 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task LoadDevices(ApplicationArchitectClient appArch)
         {
-            if (State.ConnectedDevicesConfig == null)
-                State.ConnectedDevicesConfig = new IoTEnsembleConnectedDevicesConfig();
+            if (State.Devices == null)
+                State.Devices = new IoTEnsembleConnectedDevicesConfig();
 
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
-            State.ConnectedDevicesConfig.Devices = devicesResp.Model?.Select(m =>
+            State.Devices.Devices = devicesResp.Model?.Select(m =>
             {
                 var devInfo = m.JSONConvert<IoTEnsembleDeviceInfo>();
 
@@ -375,24 +377,18 @@ namespace LCU.State.API.IoTEnsemble.State
 
             }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
 
-            State.LatestDeviceSASTokens = new Dictionary<string, string>();
+            State.Devices.SASTokens = new Dictionary<string, string>();
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)
         {
             var status = Status.Success;
 
-            if (State.Telemetry == null)
-                State.Telemetry = new IoTEnsembleTelemetry()
-                {
-                    RefreshRate = 30,
-                    PageSize = 20,
-                    Page = 1,
-                    Payloads = new List<IoTEnsembleTelemetryPayload>()
-                };
-
             if (State.Telemetry.Page < 1)
                 State.Telemetry.Page = 1;
+
+            if (State.Telemetry.PageSize < 1)
+                State.Telemetry.PageSize = 10;
 
             if (State.Telemetry.Enabled)
             {
@@ -543,7 +539,7 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                State.ConnectedDevicesConfig.PageSize = pageSize;
+                State.Devices.PageSize = pageSize;
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
