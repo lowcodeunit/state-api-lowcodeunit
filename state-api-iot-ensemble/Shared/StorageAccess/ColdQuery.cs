@@ -28,6 +28,7 @@ using Microsoft.Azure.Documents.Client;
 using Newtonsoft.Json.Converters;
 using System.Net.Http.Headers;
 using LCU.Presentation.State.ReqRes;
+using Microsoft.Extensions.Primitives;
 
 namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 {
@@ -91,6 +92,36 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
                     log.LogInformation($"Running a ColdQuery: {dataReq.ToJSON()}");
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
+
+                    if (req.Query.ContainsKey("dataType"))
+                        dataReq.DataType = req.Query["dataType"].As<ColdQueryDataTypes>();
+
+                    if (req.Query.ContainsKey("endDate"))
+                        dataReq.EndDate = req.Query["endDate"].As<DateTime>();
+
+                    if (req.Query.ContainsKey("flatten"))
+                        dataReq.Flatten = req.Query["flatten"].As<bool>();
+
+                    if (req.Query.ContainsKey("includeEmulated"))
+                        dataReq.IncludeEmulated = req.Query["includeEmulated"].As<bool>();
+
+                    if (req.Query.ContainsKey("page"))
+                        dataReq.Page = req.Query["page"].As<int>();
+
+                    if (req.Query.ContainsKey("pageSize"))
+                        dataReq.PageSize = req.Query["pageSize"].As<int>();
+
+                    if (req.Query.ContainsKey("resultType"))
+                        dataReq.ResultType = req.Query["resultType"].As<ColdQueryResultTypes>();
+
+                    if (req.Query.ContainsKey("startDate"))
+                        dataReq.StartDate = req.Query["startDate"].As<DateTime>();
+
+                    if (req.Query.ContainsKey("selectedDevices"))
+                        dataReq.SelectedDeviceIDs = req.Query["selectedDevices"].ToString().Split(',').ToList();
+
+                    if (req.Query.ContainsKey("zip"))
+                        dataReq.Zip = req.Query["zip"].As<bool>();
 
                     var now = DateTime.UtcNow;
 

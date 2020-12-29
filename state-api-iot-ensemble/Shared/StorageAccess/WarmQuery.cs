@@ -74,8 +74,6 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
                 Status = Status.GeneralError
             };
 
-            var body = await req.LoadBody<MetadataModel>();
-
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, WarmQueryRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
@@ -83,7 +81,25 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
 
-                    queried = await harness.WarmQuery(telemClient, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page, 
+                    if (req.Query.ContainsKey("endDate"))
+                        dataReq.EndDate = req.Query["endDate"].As<DateTime>();
+
+                    if (req.Query.ContainsKey("includeEmulated"))
+                        dataReq.IncludeEmulated = req.Query["includeEmulated"].As<bool>();
+
+                    if (req.Query.ContainsKey("page"))
+                        dataReq.Page = req.Query["page"].As<int>();
+
+                    if (req.Query.ContainsKey("pageSize"))
+                        dataReq.PageSize = req.Query["pageSize"].As<int>();
+
+                    if (req.Query.ContainsKey("startDate"))
+                        dataReq.StartDate = req.Query["startDate"].As<DateTime>();
+
+                    if (req.Query.ContainsKey("selectedDevices"))
+                        dataReq.SelectedDeviceIDs = req.Query["selectedDevices"].As<List<string>>();
+
+                    queried = await harness.WarmQuery(telemClient, dataReq.SelectedDeviceIDs, dataReq.PageSize, dataReq.Page,
                         dataReq.IncludeEmulated, dataReq.StartDate, dataReq.EndDate);
 
                     return queried.Status;
