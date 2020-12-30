@@ -504,8 +504,13 @@ namespace LCU.State.API.IoTEnsemble.State
                     { EMULATED_DEVICE_ENABLED, enabled.ToString() }
                 });
 
-                if (resp.Status)
+                if (resp.Status){
                     State.Emulated.Enabled = enabled;
+
+                    if (State.Devices.Devices.Count() == 0){
+                        State.Telemetry.Enabled = enabled;
+                    }
+                }
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
