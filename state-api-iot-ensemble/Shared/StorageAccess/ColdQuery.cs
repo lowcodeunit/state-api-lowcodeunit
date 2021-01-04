@@ -93,35 +93,38 @@ namespace LCU.State.API.IoTEnsemble.Shared.StorageAccess
 
                     var stateDetails = StateUtils.LoadStateDetails(req);
 
+                    if (dataReq == null)
+                        dataReq = new ColdQueryRequest();
+
                     if (req.Query.ContainsKey("dataType"))
-                        dataReq.DataType = req.Query["dataType"].As<ColdQueryDataTypes>();
+                        dataReq.DataType = req.Query["dataType"].ToString().As<ColdQueryDataTypes>(ColdQueryDataTypes.Telemetry);
 
                     if (req.Query.ContainsKey("endDate"))
-                        dataReq.EndDate = req.Query["endDate"].As<DateTime>();
+                        dataReq.EndDate = req.Query["endDate"].ToString().As<DateTime>();
 
                     if (req.Query.ContainsKey("flatten"))
-                        dataReq.Flatten = req.Query["flatten"].As<bool>();
+                        dataReq.Flatten = req.Query["flatten"].ToString().As<bool>();
 
                     if (req.Query.ContainsKey("includeEmulated"))
-                        dataReq.IncludeEmulated = req.Query["includeEmulated"].As<bool>();
+                        dataReq.IncludeEmulated = req.Query["includeEmulated"].ToString().As<bool>();
 
                     if (req.Query.ContainsKey("page"))
-                        dataReq.Page = req.Query["page"].As<int>();
+                        dataReq.Page = req.Query["page"].ToString().As<int>();
 
                     if (req.Query.ContainsKey("pageSize"))
-                        dataReq.PageSize = req.Query["pageSize"].As<int>();
+                        dataReq.PageSize = req.Query["pageSize"].ToString().As<int>();
 
                     if (req.Query.ContainsKey("resultType"))
-                        dataReq.ResultType = req.Query["resultType"].As<ColdQueryResultTypes>();
+                        dataReq.ResultType = req.Query["resultType"].ToString().As<ColdQueryResultTypes>(ColdQueryResultTypes.JSON);
 
                     if (req.Query.ContainsKey("startDate"))
-                        dataReq.StartDate = req.Query["startDate"].As<DateTime>();
+                        dataReq.StartDate = req.Query["startDate"].ToString().As<DateTime>();
 
                     if (req.Query.ContainsKey("selectedDevices"))
                         dataReq.SelectedDeviceIDs = req.Query["selectedDevices"].ToString().Split(',').ToList();
 
                     if (req.Query.ContainsKey("zip"))
-                        dataReq.Zip = req.Query["zip"].As<bool>();
+                        dataReq.Zip = req.Query["zip"].ToString().As<bool>();
 
                     var now = DateTime.UtcNow;
 
