@@ -251,7 +251,9 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             if (State.UserEnterpriseLookup.IsNullOrEmpty())
             {
-                var getResp = await entMgr.ResolveHost(username.ToMD5Hash(), false);
+                var hostLookup = $"{parentEntLookup}|{username}";
+
+                var getResp = await entMgr.ResolveHost(hostLookup, false);
 
                 if (!getResp.Status || getResp.Model == null)
                 {
@@ -259,7 +261,7 @@ namespace LCU.State.API.IoTEnsemble.State
                     {
                         Name = username,
                         Description = username,
-                        Host = username.ToMD5Hash()
+                        Host = hostLookup
                     }, parentEntLookup, username);
 
                     if (createResp.Status)
@@ -507,7 +509,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 if (resp.Status){
                     State.Emulated.Enabled = enabled;
 
-                    if (State.Devices.Devices.Count() == 0){
+                    if (State.Devices.Devices.IsNullOrEmpty()){
                         State.Telemetry.Enabled = enabled;
                     }
                 }
