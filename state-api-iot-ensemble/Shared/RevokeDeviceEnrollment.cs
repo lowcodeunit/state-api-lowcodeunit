@@ -68,6 +68,8 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                         await harness.RevokeDeviceEnrollment(appArch, enrollReq.DeviceID);
 
+                        harness.State.Devices.Loading = false;
+
                         return Status.Success;
                     });
 
