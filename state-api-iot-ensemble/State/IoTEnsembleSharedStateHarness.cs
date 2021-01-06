@@ -277,9 +277,6 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task<Status> HasLicenseAccess(IdentityManagerClient idMgr, string entLookup, string username)
         {
-            if (State.Devices == null)
-                State.Devices = new IoTEnsembleConnectedDevicesConfig();
-
             var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
 
             State.HasAccess = hasAccess.Status;
@@ -374,17 +371,20 @@ namespace LCU.State.API.IoTEnsemble.State
 
             var devicesResp = await appArch.ListEnrolledDevices(State.UserEnterpriseLookup, envLookup: null);
 
-            State.Devices.Devices = devicesResp.Model?.Select(m =>
+            if (devicesResp.Status)
             {
-                var devInfo = m.JSONConvert<IoTEnsembleDeviceInfo>();
+                State.Devices.Devices = devicesResp.Model?.Select(m =>
+                {
+                    var devInfo = m.JSONConvert<IoTEnsembleDeviceInfo>();
 
-                devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
+                    devInfo.DeviceName = devInfo.DeviceID.Replace($"{State.UserEnterpriseLookup}-", String.Empty);
 
-                return devInfo;
+                    return devInfo;
 
-            }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
+                }).JSONConvert<List<IoTEnsembleDeviceInfo>>() ?? new List<IoTEnsembleDeviceInfo>();
 
-            State.Devices.SASTokens = null;
+                State.Devices.SASTokens = null;
+            }
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)
@@ -434,6 +434,8 @@ namespace LCU.State.API.IoTEnsemble.State
         {
             await EnsureUserEnterprise(entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
+            await LoadDevices(appArch);
+
             await HasLicenseAccess(idMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
             await Task.WhenAll(
@@ -442,7 +444,6 @@ namespace LCU.State.API.IoTEnsemble.State
                 EnsureDrawersConfig(secMgr),
                 EnsureEmulatedDeviceInfo(secMgr),
                 EnsureTelemetry(starter, stateDetails, exActReq, secMgr),
-                LoadDevices(appArch),
                 LoadAPIOptions()
             );
         }
@@ -506,10 +507,12 @@ namespace LCU.State.API.IoTEnsemble.State
                     { EMULATED_DEVICE_ENABLED, enabled.ToString() }
                 });
 
-                if (resp.Status){
+                if (resp.Status)
+                {
                     State.Emulated.Enabled = enabled;
 
-                    if (State.Devices.Devices.IsNullOrEmpty()){
+                    if (State.Devices.Devices.IsNullOrEmpty())
+                    {
                         State.Telemetry.Enabled = enabled;
                     }
                 }
