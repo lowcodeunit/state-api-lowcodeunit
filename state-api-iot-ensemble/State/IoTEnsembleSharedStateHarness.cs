@@ -404,16 +404,13 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 try
                 {
-                    var payloads = queryTelemetryPayloads(client, State.UserEnterpriseLookup,
+                    var payloads = await queryTelemetryPayloads(client, State.UserEnterpriseLookup,
                             State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Telemetry.Page, State.Emulated.Enabled);
 
-                    var totalPayloads = queryTelemetryPayloads(client, State.UserEnterpriseLookup,
-                            State.SelectedDeviceIDs, State.Telemetry.PageSize, State.Telemetry.Page, State.Emulated.Enabled, true);
-                                                  
-                    await Task.WhenAll(payloads, totalPayloads);
-
-                    if (!payloads.Result.IsNullOrEmpty())
-                        State.Telemetry.Payloads.AddRange(payloads.Result);
+                    if (!payloads.Items.IsNullOrEmpty())
+                        State.Telemetry.Payloads.AddRange(payloads.Items);
+                    
+                    State.Telemetry.TotalPayloads = payloads.TotalRecords;
 
                     status.Metadata["RefreshRate"] = State.Telemetry.RefreshRate >= 10 ? State.Telemetry.RefreshRate : 30;
 
@@ -681,8 +678,10 @@ namespace LCU.State.API.IoTEnsemble.State
 
             try
             {
-                response.Payloads = await queryTelemetryPayloads(telemClient, State.UserEnterpriseLookup, selectedDeviceIds, pageSize.Value,
+                var payloads = await queryTelemetryPayloads(telemClient, State.UserEnterpriseLookup, selectedDeviceIds, pageSize.Value,
                     page.Value, includeEmulated);
+
+                response.Payloads = payloads.Items.ToList();
 
                 response.Status = Status.Success;
             }
@@ -887,8 +886,8 @@ namespace LCU.State.API.IoTEnsemble.State
             return response;
         }
 
-        protected virtual async Task<List<IoTEnsembleTelemetryPayload>> queryTelemetryPayloads(DocumentClient client, string entLookup,
-            List<string> selectedDeviceIds, int pageSize, int page, bool emulatedEnabled, bool count = false)
+        protected virtual async Task<Pageable<IoTEnsembleTelemetryPayload>> queryTelemetryPayloads(DocumentClient client, string entLookup,
+            List<string> selectedDeviceIds, int pageSize, int page, bool emulatedEnabled, bool count = true)
         {
             if (page < 1)
                 page = 1;
@@ -904,34 +903,32 @@ namespace LCU.State.API.IoTEnsemble.State
                     EnableCrossPartitionQuery = true
                 })
                 .Where(payload => payload.EnterpriseLookup == entLookup || (emulatedEnabled && payload.EnterpriseLookup == "EMULATED"));
-
+            
             if (!selectedDeviceIds.IsNullOrEmpty())
                 docsQueryBldr = docsQueryBldr.Where(payload => selectedDeviceIds.Contains(payload.DeviceID));
             
-            var payloads = new List<IoTEnsembleTelemetryPayload>();
+            var payloads = new Pageable<IoTEnsembleTelemetryPayload>();
 
-            if(!count){
-                docsQueryBldr = docsQueryBldr
-                    .OrderByDescending(payload => payload._ts)
-                    .Skip((pageSize * page) - pageSize)
-                    .Take(pageSize);
+            docsQueryBldr = docsQueryBldr
+                .OrderByDescending(payload => payload._ts);            
 
-                var docsQuery = docsQueryBldr.AsDocumentQuery();
-                                    
-                while (docsQuery.HasMoreResults)
-                    payloads.AddRange(await docsQuery.ExecuteNextAsync<IoTEnsembleTelemetryPayload>());                                    
+            if(count)
+            {         
+                payloads.TotalRecords = await docsQueryBldr.CountAsync();                                     
             }
-            else{
-                docsQueryBldr = docsQueryBldr
-                    .OrderByDescending(payload => payload._ts);         
 
-                var docsQuery = docsQueryBldr.AsDocumentQuery();
+            docsQueryBldr = docsQueryBldr
+                .Skip((pageSize * page) - pageSize)
+                .Take(pageSize);
 
-                while (docsQuery.HasMoreResults)
-                    payloads.AddRange(await docsQuery.ExecuteNextAsync<IoTEnsembleTelemetryPayload>());    
+            var docsQuery = docsQueryBldr.AsDocumentQuery();
 
-                State.Telemetry.TotalPayloads = payloads.Count();                                              
-            }
+            var tempPayloads = new List<IoTEnsembleTelemetryPayload>();
+
+            while (docsQuery.HasMoreResults)
+                tempPayloads.AddRange(await docsQuery.ExecuteNextAsync<IoTEnsembleTelemetryPayload>());  
+
+            payloads.Items = tempPayloads;
 
             return payloads;
         }

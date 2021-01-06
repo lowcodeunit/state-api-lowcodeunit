@@ -182,7 +182,7 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual int RefreshRate { get; set; }
 
         [DataMember]
-        public virtual int TotalPayloads { get; set; }
+        public virtual long TotalPayloads { get; set; }
     }
 
     [Serializable]
