@@ -386,6 +386,8 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 State.Devices.SASTokens = null;
             }
+            else if (State.Devices.Devices.IsNullOrEmpty())
+                State.Devices.Devices = new List<IoTEnsembleDeviceInfo>();
         }
 
         public virtual async Task<Status> LoadTelemetry(SecurityManagerClient secMgr, DocumentClient client)
@@ -409,7 +411,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
                     if (!payloads.Items.IsNullOrEmpty())
                         State.Telemetry.Payloads.AddRange(payloads.Items);
-                    
+
                     State.Telemetry.TotalPayloads = payloads.TotalRecords;
 
                     status.Metadata["RefreshRate"] = State.Telemetry.RefreshRate >= 10 ? State.Telemetry.RefreshRate : 30;
@@ -903,18 +905,18 @@ namespace LCU.State.API.IoTEnsemble.State
                     EnableCrossPartitionQuery = true
                 })
                 .Where(payload => payload.EnterpriseLookup == entLookup || (emulatedEnabled && payload.EnterpriseLookup == "EMULATED"));
-            
+
             if (!selectedDeviceIds.IsNullOrEmpty())
                 docsQueryBldr = docsQueryBldr.Where(payload => selectedDeviceIds.Contains(payload.DeviceID));
-            
+
             var payloads = new Pageable<IoTEnsembleTelemetryPayload>();
 
             docsQueryBldr = docsQueryBldr
-                .OrderByDescending(payload => payload._ts);            
+                .OrderByDescending(payload => payload._ts);
 
-            if(count)
-            {         
-                payloads.TotalRecords = await docsQueryBldr.CountAsync();                                     
+            if (count)
+            {
+                payloads.TotalRecords = await docsQueryBldr.CountAsync();
             }
 
             docsQueryBldr = docsQueryBldr
@@ -926,7 +928,7 @@ namespace LCU.State.API.IoTEnsemble.State
             var tempPayloads = new List<IoTEnsembleTelemetryPayload>();
 
             while (docsQuery.HasMoreResults)
-                tempPayloads.AddRange(await docsQuery.ExecuteNextAsync<IoTEnsembleTelemetryPayload>());  
+                tempPayloads.AddRange(await docsQuery.ExecuteNextAsync<IoTEnsembleTelemetryPayload>());
 
             payloads.Items = tempPayloads;
 
