@@ -164,6 +164,9 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual bool Enabled { get; set; }
 
         [DataMember]
+        public virtual DateTime LastSyncedAt { get; set; }
+
+        [DataMember]
         public virtual bool Loading { get; set; }
 
         [DataMember]
@@ -179,7 +182,7 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual int RefreshRate { get; set; }
 
         [DataMember]
-        public virtual DateTime LastSyncedAt { get; set; }
+        public virtual int TotalPayloads { get; set; }
     }
 
     [Serializable]
