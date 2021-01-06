@@ -171,7 +171,8 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task EnsureEmulatedDeviceInfo(SecurityManagerClient secMgr)
+        public virtual async Task EnsureEmulatedDeviceInfo(IDurableOrchestrationClient starter, StateDetails stateDetails,
+            ExecuteActionRequest exActReq, SecurityManagerClient secMgr, DocumentClient client)
         {
             if (State.Emulated == null)
                 State.Emulated = new EmulatedDeviceInfo();
@@ -186,7 +187,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 {
                     State.Emulated.Enabled = true;
 
-                    await ToggleEmulatedEnabled(secMgr);
+                    await ToggleEmulatedEnabled(starter, stateDetails, exActReq, secMgr, client);
                 }
             }
             else
@@ -430,7 +431,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task Refresh(IDurableOrchestrationClient starter, StateDetails stateDetails, ExecuteActionRequest exActReq,
             ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
-            SecurityManagerClient secMgr)
+            SecurityManagerClient secMgr, DocumentClient client)
         {
             await EnsureUserEnterprise(entArch, entMgr, secMgr, stateDetails.EnterpriseLookup, stateDetails.Username);
 
@@ -442,7 +443,7 @@ namespace LCU.State.API.IoTEnsemble.State
                 EnsureAPISubscription(entArch, stateDetails.EnterpriseLookup, stateDetails.Username),
                 EnsureDevicesDashboard(secMgr),
                 EnsureDrawersConfig(secMgr),
-                EnsureEmulatedDeviceInfo(secMgr),
+                EnsureEmulatedDeviceInfo(starter, stateDetails, exActReq, secMgr, client),
                 EnsureTelemetry(starter, stateDetails, exActReq, secMgr),
                 LoadAPIOptions()
             );
@@ -496,7 +497,8 @@ namespace LCU.State.API.IoTEnsemble.State
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
         }
 
-        public virtual async Task ToggleEmulatedEnabled(SecurityManagerClient secMgr)
+        public virtual async Task ToggleEmulatedEnabled(IDurableOrchestrationClient starter, StateDetails stateDetails,
+            ExecuteActionRequest exActReq, SecurityManagerClient secMgr, DocumentClient client)
         {
             if (!State.UserEnterpriseLookup.IsNullOrEmpty())
             {
@@ -513,7 +515,11 @@ namespace LCU.State.API.IoTEnsemble.State
 
                     if (State.Devices.Devices.IsNullOrEmpty())
                     {
-                        State.Telemetry.Enabled = enabled;
+                        await setTelemetryEnabled(secMgr, !State.Telemetry.Enabled);
+
+                        await EnsureTelemetrySyncState(starter, stateDetails, exActReq);
+
+                        await LoadTelemetry(secMgr, client);
                     }
                 }
             }
