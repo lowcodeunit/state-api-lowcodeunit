@@ -26,10 +26,10 @@ namespace LCU.State.API.IoTEnsemble.Shared
     [Serializable]
     [DataContract]
     public class IssueDeviceSASTokenRequest : BaseRequest
-    { 
+    {
         [DataMember]
         public virtual string DeviceName { get; set; }
-        
+
         [DataMember]
         public virtual int ExpiryInSeconds { get; set; }
     }
@@ -45,18 +45,36 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
         [FunctionName("IssueDeviceSASToken")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
-            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, IssueDeviceSASTokenRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
-            {
-                log.LogInformation($"IssueDeviceSASToken");
+                {
+                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
 
-                await harness.IssueDeviceSASToken(appArch, dataReq.DeviceName, dataReq.ExpiryInSeconds);
+                    if (harness.State.Devices == null)
+                        harness.State.Devices = new IoTEnsembleConnectedDevicesConfig();
 
-                return Status.Success;
-            });
+                    harness.State.Devices.Loading = true;
+
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, IssueDeviceSASTokenRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                    async (harness, dataReq, actReq) =>
+                    {
+                        log.LogInformation($"IssueDeviceSASToken");
+
+                        await harness.IssueDeviceSASToken(appArch, dataReq.DeviceName, dataReq.ExpiryInSeconds);
+
+                        harness.State.Devices.Loading = false;
+
+                        return Status.Success;
+                    });
+
+            return status;
         }
     }
 }
