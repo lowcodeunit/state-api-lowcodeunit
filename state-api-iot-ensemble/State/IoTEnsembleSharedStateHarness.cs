@@ -519,7 +519,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
                     if (State.Devices.Devices.IsNullOrEmpty())
                     {
-                        await setTelemetryEnabled(secMgr, !State.Telemetry.Enabled);
+                        await setTelemetryEnabled(secMgr, enabled);
 
                         await EnsureTelemetrySyncState(starter, stateDetails, exActReq);
 
