@@ -278,7 +278,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
         public virtual async Task<Status> HasLicenseAccess(IdentityManagerClient idMgr, string entLookup, string username)
         {
-            var hasAccess = await idMgr.HasLicenseAccess(entLookup, Personas.AllAnyTypes.All, new List<string>() { "iot" });
+            var hasAccess = await idMgr.HasLicenseAccess(entLookup, username, Personas.AllAnyTypes.All, new List<string>() { "iot" });
 
             State.HasAccess = hasAccess.Status;
 
@@ -386,7 +386,7 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 State.Devices.SASTokens = null;
             }
-            else if (State.Devices.Devices.IsNullOrEmpty())
+            else if (State.Devices.Devices.IsNullOrEmpty() || devicesResp.Status == Status.NotLocated)
                 State.Devices.Devices = new List<IoTEnsembleDeviceInfo>();
         }
 
@@ -451,6 +451,14 @@ namespace LCU.State.API.IoTEnsemble.State
                 EnsureTelemetry(starter, stateDetails, exActReq, secMgr),
                 LoadAPIOptions()
             );
+
+            State.Loading = false;
+
+            State.Devices.Loading = false;
+
+            State.Emulated.Loading = false;
+
+            State.Telemetry.Loading = false;
         }
 
         public virtual async Task<bool> RevokeDeviceEnrollment(ApplicationArchitectClient appArch, string deviceId)

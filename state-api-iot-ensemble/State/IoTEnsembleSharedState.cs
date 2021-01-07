@@ -75,6 +75,9 @@ namespace LCU.State.API.IoTEnsemble.State
     {
         [DataMember]
         public virtual bool Enabled { get; set; }
+        
+        [DataMember]
+        public virtual bool Loading { get; set; }
     }
 
     [Serializable]
