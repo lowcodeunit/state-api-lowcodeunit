@@ -75,7 +75,7 @@ namespace LCU.State.API.IoTEnsemble.State
     {
         [DataMember]
         public virtual bool Enabled { get; set; }
-        
+
         [DataMember]
         public virtual bool Loading { get; set; }
     }
@@ -283,5 +283,22 @@ namespace LCU.State.API.IoTEnsemble.State
 
         [DataMember]
         public virtual string Path { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleEnterpriseReferenceData
+    {
+        [DataMember]
+        public virtual int Devices { get; set; }
+
+        [DataMember]
+        public virtual int DataInterval { get; set; }
+
+        [DataMember]
+        public virtual int DataRetention { get; set; }
+
+        [DataMember]
+        public virtual string EnterpriseLookup { get; set; }
     }
 }
