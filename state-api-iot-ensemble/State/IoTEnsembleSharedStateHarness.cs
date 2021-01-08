@@ -92,7 +92,6 @@ namespace LCU.State.API.IoTEnsemble.State
 
                 status = enrollResp.Status;
             }
-
             else
                 status = Status.Conflict.Clone("Max Device Count Reached");
 
