@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Fathym;
 using LCU.Graphs.Registry.Enterprises;
 using LCU.Personas.Client.Applications;
 using LCU.Personas.Client.Enterprises;
@@ -18,11 +19,15 @@ namespace LCU.State.API.IoTEnsemble.Shared
 {
     public class GenerateDeviceReferenceData
     {
-        protected ApplicationArchitectClient appArch;
+        #region Fields
+        protected readonly ApplicationArchitectClient appArch;
 
-        protected EnterpriseManagerClient entMgr;
+        protected readonly EnterpriseManagerClient entMgr;
 
-        protected IdentityManagerClient idMgr;
+        protected readonly IdentityManagerClient idMgr;
+
+        protected readonly string parentEntLookup;
+        #endregion
 
         public GenerateDeviceReferenceData(ApplicationArchitectClient appArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr)
         {
@@ -31,58 +36,88 @@ namespace LCU.State.API.IoTEnsemble.Shared
             this.entMgr = entMgr;
 
             this.idMgr = idMgr;
+
+            parentEntLookup = Environment.GetEnvironmentVariable("LCU-ENTERPRISE-LOOKUP");
         }
 
         [FunctionName("GenerateDeviceReferenceData")]
         public virtual async Task Run([TimerTrigger("0 */1 * * * *")] TimerInfo myTimer, ILogger log,
-            [Blob("cold-storage/reference-data", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory refDataBlob)
+            [Blob("cold-storage/reference-data", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory refDataBlobDir)
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
-            var parentEntLookup = Environment.GetEnvironmentVariable("LCU-ENTERPRISE-LOOKUP");
+            var refData = await loadReferenceData();
 
-            var billingPlanOptions = await entMgr.ListBillingPlanOptions(parentEntLookup, "iot");
+            await uploadReferenceData(refDataBlobDir, refData);
+        }
 
+        #region Helpers
+        protected virtual async Task<List<IoTEnsembleEnterpriseReferenceData>> loadReferenceData()
+        {
             var childEnts = await entMgr.ListChildEnterprises(parentEntLookup);
+
+            var refData = new List<IoTEnsembleEnterpriseReferenceData>();
 
             if (childEnts.Status)
                 await childEnts.Model.Each(async childEnt =>
                 {
-                    await processChildEnt(refDataBlob, childEnt, billingPlanOptions.Model);
+                    var metadata = await processChildEnt(childEnt);
+
+                    lock (refData)
+                        refData.AddRange(metadata);
                 }, parallel: true);
+
+            return refData;
         }
 
-        #region Helpers
-        protected virtual async Task processChildEnt(CloudBlobDirectory refDataBlob, Enterprise childEnt, 
-            List<BillingPlanOption> billigPlanOptions)
+        protected virtual async Task<List<IoTEnsembleEnterpriseReferenceData>> processChildEnt(Enterprise childEnt)
         {
-            var entLookupParts = childEnt.EnterpriseLookup.Split('|');
+            var refData = new List<IoTEnsembleEnterpriseReferenceData>();
 
-            if (entLookupParts.Length >= 2)
+            await childEnt.Hosts.Each(async childEntHost =>
             {
-                var parentLookup = entLookupParts[0];
+                var hostLookupParts = childEntHost.Split('|');
 
-                var username = entLookupParts[1];
-
-                var devices = await appArch.ListEnrolledDevices(username);
-
-                var license = await idMgr.HasLicenseAccess(parentLookup, username, Personas.AllAnyTypes.All, new List<string>() { "iot" });
-
-                if (license.Status && license.Model != null)
+                if (hostLookupParts.Length >= 2)
                 {
+                    var parentLookup = hostLookupParts[0];
 
+                    var username = hostLookupParts[1];
+
+                    var license = await idMgr.HasLicenseAccess(parentLookup, username, Personas.AllAnyTypes.All, new List<string>() { "iot" });
+
+                    IoTEnsembleEnterpriseReferenceData refd;
+
+                    if (license.Status && license.Model != null)
+                        refd = license.Model.JSONConvert<IoTEnsembleEnterpriseReferenceData>();
+                    else
+                        refd = new IoTEnsembleEnterpriseReferenceData()
+                        {
+                            Devices = 1,
+                            DataInterval = 300,
+                            DataRetention = 43200
+                        };
+
+                    refd.EnterpriseLookup = childEnt.EnterpriseLookup;
+
+                    refData.Add(refd);
                 }
-                else
-                {
+            });
 
-                }
+            return refData;
+        }
 
-                var now = DateTime.UtcNow;
+        protected virtual async Task uploadReferenceData(CloudBlobDirectory refDataBlobDir, List<IoTEnsembleEnterpriseReferenceData> refData)
+        {
+            var now = DateTime.UtcNow;
 
-                var dateBlob = refDataBlob.GetDirectoryReference($"{now.ToString("YYYY-MM-DD")}");
+            var dateBlobDir = refDataBlobDir.GetDirectoryReference($"{now.ToString("yyyy-MM-dd")}");
 
-                var timeBlob = dateBlob.GetDirectoryReference($"{now.AddMinutes(1).ToString("HH-mm")}");
-            }
+            var timeBlobDir = dateBlobDir.GetDirectoryReference($"{now.AddMinutes(1).ToString("HH-mm")}");
+
+            var refDataBlob = timeBlobDir.GetBlockBlobReference("enterprise.ref-data.json");
+
+            await refDataBlob.UploadTextAsync(refData.ToJSON());
         }
         #endregion
     }

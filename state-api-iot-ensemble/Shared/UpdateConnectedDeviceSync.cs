@@ -55,9 +55,6 @@ namespace LCU.State.API.IoTEnsemble.Shared
                 {
                     log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
 
-                    if (harness.State.Devices == null)
-                        harness.State.Devices = new IoTEnsembleConnectedDevicesConfig();
-
                     harness.State.Devices.Loading = true;
 
                     return Status.Success;
