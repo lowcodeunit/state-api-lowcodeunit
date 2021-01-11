@@ -95,9 +95,9 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{stateCtxt.StateDetails.EnterpriseLookup}/{stateCtxt.StateDetails.HubName}/{stateCtxt.StateDetails.Username}/{stateCtxt.StateDetails.StateKey}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
-                databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
-                collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
-                ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
+                databaseName: "%LCU-WARM-STORAGE-DATABASE%",
+                collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
+                ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient docClient)
         {
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(stateCtxt.StateDetails,
                 stateCtxt.ActionRequest, signalRMessages, log, async (harness, reqData) =>

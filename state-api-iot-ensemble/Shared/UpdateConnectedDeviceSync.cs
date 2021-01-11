@@ -46,11 +46,25 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
-                databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
-                collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
-                ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
+                databaseName: "%LCU-WARM-STORAGE-DATABASE%",
+                collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
+                ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient docClient)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateConnectedDevicesSyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                async (harness, dataReq, actReq) =>
+                {
+                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
+
+                    if (harness.State.Devices == null)
+                        harness.State.Devices = new IoTEnsembleConnectedDevicesConfig();
+
+                    harness.State.Devices.Loading = true;
+
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateConnectedDevicesSyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
             {
                 log.LogInformation($"UpdateConnectedDevicesSync");
@@ -59,8 +73,12 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
                 await harness.UpdateConnectedDevicesSync(dataReq.PageSize);
 
+                harness.State.Devices.Loading = false;
+
                 return Status.Success;
             });
+
+            return status;
         }
     }
 }

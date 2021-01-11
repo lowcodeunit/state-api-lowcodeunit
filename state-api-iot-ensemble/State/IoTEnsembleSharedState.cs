@@ -17,6 +17,7 @@ using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using LCU.Personas.Applications;
+using Fathym.API;
 
 namespace LCU.State.API.IoTEnsemble.State
 {
@@ -29,10 +30,16 @@ namespace LCU.State.API.IoTEnsemble.State
         #endregion
 
         [DataMember]
-        public virtual IoTEnsembleConnectedDevicesConfig ConnectedDevicesConfig { get; set; }
+        public virtual string AccessLicenseType { get; set; }
+
+        [DataMember]
+        public virtual string AccessPlanGroup { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleDashboardConfiguration Dashboard { get; set; }
+
+        [DataMember]
+        public virtual IoTEnsembleConnectedDevicesConfig Devices { get; set; }
 
         [DataMember]
         public virtual IoTEnsembleDrawersConfig Drawers { get; set; }
@@ -41,7 +48,10 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual EmulatedDeviceInfo Emulated { get; set; }
 
         [DataMember]
-        public virtual Dictionary<string, string> LatestDeviceSASTokens { get; set; }
+        public virtual ErrorContext Error { get; set; }
+
+        [DataMember]
+        public virtual bool HasAccess { get; set; }
 
         [DataMember]
         public virtual bool Loading { get; set; }
@@ -69,6 +79,26 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
+    public class ErrorContext
+    {
+        [DataMember]
+        public virtual string ActionPath { get; set; }
+
+        [DataMember]
+        public virtual string ActionTarget { get; set; }
+
+        [DataMember]
+        public virtual string ActionText { get; set; }
+
+        [DataMember]
+        public virtual string Message { get; set; }
+
+        [DataMember]
+        public virtual string Title { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
     public class IoTEnsembleDashboardConfiguration
     {
         [DataMember]
@@ -80,13 +110,25 @@ namespace LCU.State.API.IoTEnsemble.State
 
     [Serializable]
     [DataContract]
-    public class IoTEnsembleConnectedDevicesConfig 
+    public class IoTEnsembleConnectedDevicesConfig
     {
         [DataMember]
         public virtual List<IoTEnsembleDeviceInfo> Devices { get; set; }
 
         [DataMember]
+        public virtual bool Loading { get; set; }
+
+        [DataMember]
+        public virtual int MaxDevicesCount { get; set; }
+
+        [DataMember]
+        public virtual string Page { get; set; }
+
+        [DataMember]
         public virtual int PageSize { get; set; }
+
+        [DataMember]
+        public virtual Dictionary<string, string> SASTokens { get; set; }
     }
 
     [Serializable]
@@ -128,13 +170,24 @@ namespace LCU.State.API.IoTEnsemble.State
         public virtual List<IoTEnsembleTelemetryPayload> Payloads { get; set; }
 
         [DataMember]
+        public virtual int Page { get; set; }
+
+        [DataMember]
         public virtual int PageSize { get; set; }
 
         [DataMember]
         public virtual int RefreshRate { get; set; }
 
         [DataMember]
-        public virtual DateTime LastSyncedAt {get; set;}
+        public virtual DateTime LastSyncedAt { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleTelemetryResponse : BaseResponse
+    {
+        [DataMember]
+        public virtual List<IoTEnsembleTelemetryPayload> Payloads { get; set; }
     }
 
     [Serializable]
@@ -192,6 +245,37 @@ namespace LCU.State.API.IoTEnsemble.State
     public class IoTEnsembleStorageConfiguration
     {
         [DataMember]
-        public virtual Dictionary<string, string> APIKeys { get; set; }
+        public virtual List<IoTEnsembleAPIKeyData> APIKeys { get; set; }
+
+        [DataMember]
+        public virtual List<IoTEnsembleAPIOption> APIOptions { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleAPIKeyData
+    {
+        [DataMember]
+        public virtual string Key { get; set; }
+
+        [DataMember]
+        public virtual string KeyName { get; set; }
+    }
+
+    [Serializable]
+    [DataContract]
+    public class IoTEnsembleAPIOption
+    {
+        [DataMember]
+        public virtual string Description { get; set; }
+
+        [DataMember]
+        public virtual string Method { get; set; }
+
+        [DataMember]
+        public virtual string Name { get; set; }
+
+        [DataMember]
+        public virtual string Path { get; set; }
     }
 }

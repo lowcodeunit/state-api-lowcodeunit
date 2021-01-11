@@ -26,7 +26,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
     [Serializable]
     [DataContract]
     public class EnrollDeviceRequest : BaseRequest
-    { 
+    {
         [DataMember]
         public virtual IoTEnsembleDeviceEnrollment Device { get; set; }
     }
@@ -42,20 +42,38 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
         [FunctionName("EnrollDevice")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
-            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)]IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, EnrollDeviceRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                async (harness, enrollReq, actReq) =>
-            {
-                log.LogInformation($"EnrollDevice");
+            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                async (harness, dataReq, actReq) =>
+                {
+                    log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
 
-                var stateDetails = StateUtils.LoadStateDetails(req);
+                    if (harness.State.Devices == null)
+                        harness.State.Devices = new IoTEnsembleConnectedDevicesConfig();
 
-                await harness.EnrollDevice(appArch, enrollReq.Device);
+                    harness.State.Devices.Loading = true;
 
-                return Status.Success;
-            });
+                    return Status.Success;
+                }, preventStatusException: true);
+
+            if (status)
+                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, EnrollDeviceRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                    async (harness, enrollReq, actReq) =>
+                    {
+                        log.LogInformation($"EnrollDevice");
+
+                        var stateDetails = StateUtils.LoadStateDetails(req);
+
+                        await harness.EnrollDevice(appArch, enrollReq.Device);
+
+                        harness.State.Devices.Loading = false;
+
+                        return Status.Success;
+                    });
+
+            return status;
         }
     }
 }

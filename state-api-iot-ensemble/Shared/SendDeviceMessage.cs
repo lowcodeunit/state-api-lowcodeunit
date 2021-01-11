@@ -53,9 +53,9 @@ namespace LCU.State.API.IoTEnsemble.Shared
             [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
-                databaseName: "%LCU-WARM-TELEMETRY-DATABASE%",
-                collectionName: "%LCU-WARM-TELEMETRY-CONTAINER%",
-                ConnectionStringSetting = "LCU-WARM-TELEMETRY-CONNECTION-STRING")]DocumentClient docClient)
+                databaseName: "%LCU-WARM-STORAGE-DATABASE%",
+                collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
+                ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient docClient)
         {
             var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, TelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
@@ -72,18 +72,18 @@ namespace LCU.State.API.IoTEnsemble.Shared
 
             if (status)
                 status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, SendDeviceMessageRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
-                async (harness, dataReq, actReq) =>
-            {
-                log.LogInformation($"SendDeviceMessage");
+                    async (harness, dataReq, actReq) =>
+                    {
+                        log.LogInformation($"SendDeviceMessage");
 
-                var stateDetails = StateUtils.LoadStateDetails(req);
+                        var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.SendDeviceMessage(appArch, secMgr, docClient, dataReq.DeviceName, dataReq.Payload);
+                        await harness.SendDeviceMessage(appArch, secMgr, docClient, dataReq.DeviceName, dataReq.Payload);
 
-                harness.State.Telemetry.Loading = false;
+                        harness.State.Telemetry.Loading = false;
 
-                return Status.Success;
-            });
+                        return Status.Success;
+                    });
 
             return status;
         }
