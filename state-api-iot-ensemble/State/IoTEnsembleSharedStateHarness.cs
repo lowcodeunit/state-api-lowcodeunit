@@ -194,7 +194,7 @@ namespace LCU.State.API.IoTEnsemble.State
         }
 
         public virtual async Task EnsureTelemetry(IDurableOrchestrationClient starter, StateDetails stateDetails,
-            ExecuteActionRequest exActReq, SecurityManagerClient secMgr)
+            ExecuteActionRequest exActReq, SecurityManagerClient secMgr, DocumentClient docClient)
         {
             if (State.Telemetry == null)
                 State.Telemetry = new IoTEnsembleTelemetry()
@@ -212,9 +212,13 @@ namespace LCU.State.API.IoTEnsemble.State
                 if (tpd.Status && tpd.Model.ContainsKey(TELEMETRY_SYNC_ENABLED) && !tpd.Model[TELEMETRY_SYNC_ENABLED].IsNullOrEmpty())
                     State.Telemetry.Enabled = tpd.Model[TELEMETRY_SYNC_ENABLED].As<bool>();
                 else
-                    await setTelemetryEnabled(secMgr, false);
+                    State.Telemetry.Enabled = false;
+
+                await setTelemetryEnabled(secMgr, State.Telemetry.Enabled);
 
                 await EnsureTelemetrySyncState(starter, stateDetails, exActReq);
+
+                await LoadTelemetry(secMgr, docClient);
             }
             else
                 throw new Exception("Unable to load the user's enterprise, please try again or contact support.");
@@ -447,9 +451,10 @@ namespace LCU.State.API.IoTEnsemble.State
                 EnsureDevicesDashboard(secMgr),
                 EnsureDrawersConfig(secMgr),
                 EnsureEmulatedDeviceInfo(starter, stateDetails, exActReq, secMgr, client),
-                EnsureTelemetry(starter, stateDetails, exActReq, secMgr),
                 LoadAPIOptions()
             );
+
+            await EnsureTelemetry(starter, stateDetails, exActReq, secMgr, client);
 
             State.Loading = false;
 
