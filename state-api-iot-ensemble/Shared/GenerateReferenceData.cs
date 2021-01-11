@@ -17,10 +17,12 @@ using Microsoft.Extensions.Logging;
 
 namespace LCU.State.API.IoTEnsemble.Shared
 {
-    public class GenerateDeviceReferenceData
+    public class GenerateReferenceData
     {
         #region Fields
         protected readonly ApplicationArchitectClient appArch;
+
+        protected readonly bool bypassGenerateRefData;
 
         protected readonly EnterpriseManagerClient entMgr;
 
@@ -29,7 +31,7 @@ namespace LCU.State.API.IoTEnsemble.Shared
         protected readonly string parentEntLookup;
         #endregion
 
-        public GenerateDeviceReferenceData(ApplicationArchitectClient appArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr)
+        public GenerateReferenceData(ApplicationArchitectClient appArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr)
         {
             this.appArch = appArch;
 
@@ -38,17 +40,22 @@ namespace LCU.State.API.IoTEnsemble.Shared
             this.idMgr = idMgr;
 
             parentEntLookup = Environment.GetEnvironmentVariable("LCU-ENTERPRISE-LOOKUP");
+
+            bypassGenerateRefData = Environment.GetEnvironmentVariable("LCU-BYPASS-GENERATE-REFERENCE-DATA").As<bool>();
         }
 
-        [FunctionName("GenerateDeviceReferenceData")]
+        [FunctionName("GenerateReferenceData")]
         public virtual async Task Run([TimerTrigger("0 */1 * * * *")] TimerInfo myTimer, ILogger log,
             [Blob("cold-storage/reference-data", FileAccess.Read, Connection = "LCU-COLD-STORAGE-CONNECTION-STRING")] CloudBlobDirectory refDataBlobDir)
         {
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            if (!bypassGenerateRefData)
+            {
+                log.LogInformation($"Generating reference data");
 
-            var refData = await loadReferenceData();
+                var refData = await loadReferenceData();
 
-            await uploadReferenceData(refDataBlobDir, refData);
+                await uploadReferenceData(refDataBlobDir, refData);
+            }
         }
 
         #region Helpers
