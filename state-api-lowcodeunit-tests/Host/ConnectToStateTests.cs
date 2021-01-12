@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 using Fathym;
 using Fathym.API;
 
-namespace LCU.State.API.IoTEnsemble.Tests.Host
+namespace LCU.State.API.LowCodeUnit.Tests.Host
 {
     [TestClass]
-    public class NegotiateTests : AzFunctionTestBase
+    public class ConnectToStateTests : AzFunctionTestBase
     {
         
-        public NegotiateTests() : base()
+        public ConnectToStateTests() : base()
         {
-            APIRoute = "api/negotiate";                
+            APIRoute = "api/ConnectToState";                
         }
 
         [TestMethod]
-        public async Task TestNegotiate()
+        public async Task TestConnectToState()
         {
             LcuEntApiKey = "";            
             PrincipalId = "";

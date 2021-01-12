@@ -10,7 +10,7 @@
     },
     "extensions": {
         "durableTask": {
-            "hubName": "iotensemble",
+            "hubName": "lowcodeunit",
             "storageProvider": {
               "connectionStringName": "LCU-STORAGE-CONNECTION",
               "partitionCount": 4

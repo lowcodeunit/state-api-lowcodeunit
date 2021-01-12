@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
-    <RootNamespace>state_api_iot_ensemble</RootNamespace>
+    <RootNamespace>state_api_lowcodeunit</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="19.0.0" />

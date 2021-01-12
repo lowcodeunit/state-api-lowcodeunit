@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 using Fathym;
 using Fathym.API;
 
-namespace LCU.State.API.IoTEnsemble.Tests.Host
+namespace LCU.State.API.LowCodeUnit.Tests.Host
 {
     [TestClass]
-    public class ConnectToStateTests : AzFunctionTestBase
+    public class RefreshTests : AzFunctionTestBase
     {
         
-        public ConnectToStateTests() : base()
+        public RefreshTests() : base()
         {
-            APIRoute = "api/ConnectToState";                
+            APIRoute = "api/Refresh";                
         }
 
         [TestMethod]
-        public async Task TestConnectToState()
+        public async Task TestRefresh()
         {
             LcuEntApiKey = "";            
             PrincipalId = "";
@@ -37,7 +37,7 @@ namespace LCU.State.API.IoTEnsemble.Tests.Host
 
             var content = await getContent<BaseResponse<dynamic>>(response);
 
-            Assert.AreEqual(Status.Success, content.Status);        
+            Assert.AreEqual(Status.Success, content.Status);         
 
             throw new NotImplementedException("Implement me!");                  
         }

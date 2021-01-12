@@ -2,9 +2,9 @@ using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using LCU.StateAPI.Hosting;
 using System.Linq;
 
-[assembly: FunctionsStartup(typeof(LCU.State.API.IoTEnsemble.Host.Startup))]
+[assembly: FunctionsStartup(typeof(LCU.State.API.LowCodeUnit.Host.Startup))]
 
-namespace LCU.State.API.IoTEnsemble.Host
+namespace LCU.State.API.LowCodeUnit.Host
 {
     public class Startup : StateAPIStartup
     {

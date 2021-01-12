@@ -1,5 +1,5 @@
 {
-    "azureFunctions.deploySubpath": "state-api-iot-ensemble/bin/Release/netcoreapp3.1/publish",
+    "azureFunctions.deploySubpath": "state-api-lowcodeunit/bin/Release/netcoreapp3.1/publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~3",
     "debug.internalConsoleOptions": "neverOpen",

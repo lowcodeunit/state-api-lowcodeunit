@@ -18,45 +18,63 @@ using LCU.Personas.Client.Applications;
 using LCU.StateAPI.Utilities;
 using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
-using LCU.State.API.IoTEnsemble.State;
+using LCU.State.API.LowCodeUnit.State;
 using LCU.Personas.Client.Security;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+using LCU.Personas.Client.Identity;
 using Microsoft.Azure.Documents.Client;
 
-namespace LCU.State.API.IoTEnsemble.Shared
+namespace LCU.State.API.LowCodeUnit.Host
 {
     [Serializable]
     [DataContract]
-    public class ToggleEmulatedEnabledRequest : BaseRequest
+    public class RefreshRequest : BaseRequest
     { }
 
-    public class ToggleEmulatedEnabled
+    public class Refresh
     {
+        protected ApplicationArchitectClient appArch;
+
+        protected EnterpriseArchitectClient entArch;
+
+        protected EnterpriseManagerClient entMgr;
+
+        protected IdentityManagerClient idMgr;
+
         protected SecurityManagerClient secMgr;
 
-        public ToggleEmulatedEnabled(SecurityManagerClient secMgr)
+        public Refresh(ApplicationArchitectClient appArch, EnterpriseArchitectClient entArch, EnterpriseManagerClient entMgr, IdentityManagerClient idMgr,
+            SecurityManagerClient secMgr)
         {
-            this.secMgr = secMgr;
+            this.appArch = appArch;
+            
+            this.entArch = entArch;
+            
+            this.entMgr = entMgr;
+
+            this.idMgr = idMgr;
+            
+            this.secMgr = secMgr;           
         }
 
-        [FunctionName("ToggleEmulatedEnabled")]
+        [FunctionName("Refresh")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
             [DurableClient] IDurableOrchestrationClient starter,
-            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = LowCodeUnitSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob,
             [CosmosDB(
                 databaseName: "%LCU-WARM-STORAGE-DATABASE%",
                 collectionName: "%LCU-WARM-STORAGE-TELEMETRY-CONTAINER%",
                 ConnectionStringSetting = "LCU-WARM-STORAGE-CONNECTION-STRING")]DocumentClient docClient)
         {
-            return await stateBlob.WithStateHarness<IoTEnsembleSharedState, ToggleEmulatedEnabledRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            return await stateBlob.WithStateHarness<LowCodeUnitSharedState, RefreshRequest, LowCodeUnitSharedStateHarness>(req, signalRMessages, log,
                 async (harness, refreshReq, actReq) =>
             {
-                log.LogInformation($"ToggleEmulatedEnabled");
+                log.LogInformation($"Refresh");
 
                 var stateDetails = StateUtils.LoadStateDetails(req);
 
-                await harness.ToggleEmulatedEnabled(starter, stateDetails, actReq, secMgr, docClient);
+                await harness.Refresh(starter, stateDetails, actReq, appArch, entArch, entMgr, idMgr, secMgr, docClient);
 
                 return Status.Success;
             });

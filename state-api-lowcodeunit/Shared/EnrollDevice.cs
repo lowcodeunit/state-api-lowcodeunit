@@ -18,54 +18,52 @@ using LCU.Personas.Client.Applications;
 using LCU.StateAPI.Utilities;
 using System.Security.Claims;
 using LCU.Personas.Client.Enterprises;
-using LCU.State.API.IoTEnsemble.State;
+using LCU.State.API.LowCodeUnit.State;
 using LCU.Personas.Client.Security;
 
-namespace LCU.State.API.IoTEnsemble.Shared
+namespace LCU.State.API.LowCodeUnit.Shared
 {
     [Serializable]
     [DataContract]
-    public class RevokeDeviceEnrollmentRequest : BaseRequest
+    public class EnrollDeviceRequest : BaseRequest
     {
-        [DataMember]
-        public virtual string DeviceID { get; set; }
     }
 
-    public class RevokeDeviceEnrollment
+    public class EnrollDevice
     {
         protected ApplicationArchitectClient appArch;
 
-        public RevokeDeviceEnrollment(ApplicationArchitectClient appArch)
+        public EnrollDevice(ApplicationArchitectClient appArch)
         {
             this.appArch = appArch;
         }
 
-        [FunctionName("RevokeDeviceEnrollment")]
+        [FunctionName("EnrollDevice")]
         public virtual async Task<Status> Run([HttpTrigger] HttpRequest req, ILogger log,
-            [SignalR(HubName = IoTEnsembleSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
+            [SignalR(HubName = LowCodeUnitSharedState.HUB_NAME)] IAsyncCollector<SignalRMessage> signalRMessages,
             [Blob("state-api/{headers.lcu-ent-lookup}/{headers.lcu-hub-name}/{headers.x-ms-client-principal-id}/{headers.lcu-state-key}", FileAccess.ReadWrite)] CloudBlockBlob stateBlob)
         {
-            var status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, UpdateTelemetrySyncRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+            var status = await stateBlob.WithStateHarness<LowCodeUnitSharedState, EnrollDeviceRequest, LowCodeUnitSharedStateHarness>(req, signalRMessages, log,
                 async (harness, dataReq, actReq) =>
                 {
                     log.LogInformation($"Setting Loading device telemetry from UpdateTelemetrySync...");
 
-                    harness.State.Devices.Loading = true;
+                    harness.State.HomePage.Loading = true;
 
                     return Status.Success;
                 }, preventStatusException: true);
 
             if (status)
-                status = await stateBlob.WithStateHarness<IoTEnsembleSharedState, RevokeDeviceEnrollmentRequest, IoTEnsembleSharedStateHarness>(req, signalRMessages, log,
+                status = await stateBlob.WithStateHarness<LowCodeUnitSharedState, EnrollDeviceRequest, LowCodeUnitSharedStateHarness>(req, signalRMessages, log,
                     async (harness, enrollReq, actReq) =>
                     {
-                        log.LogInformation($"RevokeDeviceEnrollment");
+                        log.LogInformation($"EnrollDevice");
 
                         var stateDetails = StateUtils.LoadStateDetails(req);
 
-                        await harness.RevokeDeviceEnrollment(appArch, enrollReq.DeviceID);
+                        await harness.EnrollDevice(appArch);
 
-                        harness.State.Devices.Loading = false;
+                        harness.State.HomePage.Loading = false;
 
                         return Status.Success;
                     });
